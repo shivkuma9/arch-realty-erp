@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Document Management Vault & KYC Verification - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div>
+        <h1 class="page-title"><i class="bi bi-folder2-open text-primary"></i> Document Management Vault</h1>
+        <p class="page-subtitle text-muted">Legal verification repository for Property Titles, Agreements, Mandates, KYC files & Contracts.</p>
+    </div>
+</div>
+
+<!-- Verification Metrics -->
+<div class="metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div class="metric-card" style="background: var(--arch-card-bg); padding: 18px; border-radius: 8px; border: 1px solid var(--arch-border);">
+        <span style="color: var(--arch-muted); font-size: 0.85rem;">Total Vault Files</span>
+        <div style="font-size: 1.6rem; font-weight: 700; margin-top: 6px; color: var(--arch-text);">{{ documents|length }}</div>
+    </div>
+    <div class="metric-card" style="background: var(--arch-card-bg); padding: 18px; border-radius: 8px; border: 1px solid var(--arch-border);">
+        <span style="color: var(--arch-muted); font-size: 0.85rem;">Pending Legal Verification</span>
+        <div style="font-size: 1.6rem; font-weight: 700; margin-top: 6px; color: #f59e0b;">{{ pending_count }}</div>
+    </div>
+    <div class="metric-card" style="background: var(--arch-card-bg); padding: 18px; border-radius: 8px; border: 1px solid var(--arch-border);">
+        <span style="color: var(--arch-muted); font-size: 0.85rem;">Verified Documents</span>
+        <div style="font-size: 1.6rem; font-weight: 700; margin-top: 6px; color: #10b981;">{{ verified_count }}</div>
+    </div>
+    <div class="metric-card" style="background: var(--arch-card-bg); padding: 18px; border-radius: 8px; border: 1px solid var(--arch-border);">
+        <span style="color: var(--arch-muted); font-size: 0.85rem;">Rejected / Resubmit</span>
+        <div style="font-size: 1.6rem; font-weight: 700; margin-top: 6px; color: #ef4444;">{{ rejected_count }}</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px;">
+    <!-- Upload New Document Form -->
+    <div class="card" style="background: var(--arch-card-bg); border-radius: 8px; border: 1px solid var(--arch-border); padding: 24px; height: fit-content;">
+        <h3 style="font-size: 1.05rem; font-weight: 600; margin-bottom: 16px; border-bottom: 1px solid var(--arch-border); padding-bottom: 8px;">
+            <i class="bi bi-cloud-arrow-up text-primary"></i> Upload Protected Document
+        </h3>
+        <form method="POST" action="{{ url_for('documents.upload_file') }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px;">Document Title *</label>
+                <input type="text" name="title" class="form-control" placeholder="e.g. 7/12 Extract, Index II, Aadhaar Card, MoU" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px;">Document Category *</label>
+                <select name="category" class="form-control" required>
+                    <option value="Client Docs">Client Docs</option>
+                    <option value="KYC Docs">KYC Docs (PAN / Aadhaar / GSTIN)</option>
+                    <option value="Agreements">Agreements / Sale MoU / Lease Deed</option>
+                    <option value="Property Document">Property Document / 7-12 / Title Deed</option>
+                    <option value="Owner Mandate">Owner Mandate / Authorization</option>
+                    <option value="Invoice">Payment Receipt / Invoice</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px;">Attach File (PDF, DOCX, XLS, JPG, PNG)</label>
+                <input type="file" name="file" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                <i class="bi bi-shield-lock-fill"></i> Upload for Legal Verification
+            </button>
+        </form>
+    </div>
+
+    <!-- Documents List & Verification Actions -->
+    <div class="card" style="background: var(--arch-card-bg); border-radius: 8px; border: 1px solid var(--arch-border); padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--arch-border); padding-bottom: 12px;">
+            <div style="display: flex; gap: 8px;">
+                <a href="{{ url_for('documents.index') }}" class="btn btn-sm {% if not selected_category and not selected_status %}btn-primary{% else %}btn-outline{% endif %}">All</a>
+                <a href="{{ url_for('documents.index', status='Pending') }}" class="btn btn-sm {% if selected_status == 'Pending' %}btn-primary{% else %}btn-outline{% endif %}">Pending Verification</a>
+                <a href="{{ url_for('documents.index', category='KYC Docs') }}" class="btn btn-sm {% if selected_category == 'KYC Docs' %}btn-primary{% else %}btn-outline{% endif %}">KYC Docs</a>
+                <a href="{{ url_for('documents.index', category='Agreements') }}" class="btn btn-sm {% if selected_category == 'Agreements' %}btn-primary{% else %}btn-outline{% endif %}">Agreements</a>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--arch-border); text-align: left; color: var(--arch-muted); font-size: 0.8rem; text-transform: uppercase;">
+                        <th style="padding: 12px 14px;">Document Title</th>
+                        <th style="padding: 12px 14px;">Category</th>
+                        <th style="padding: 12px 14px;">Uploaded By</th>
+                        <th style="padding: 12px 14px;">Verification Status</th>
+                        <th style="padding: 12px 14px; text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in documents %}
+                    <tr style="border-bottom: 1px solid var(--arch-border); font-size: 0.85rem;">
+                        <td style="padding: 12px 14px;">
+                            <strong>{{ d.title }}</strong>
+                            <div style="font-size: 0.72rem; color: var(--arch-muted);">
+                                {{ d.created_at.strftime('%d %b %Y, %H:%M') if d.created_at else '' }} &bull; {{ (d.file_size_bytes / 1024) | round(1) if d.file_size_bytes else 0 }} KB
+                            </div>
+                        </td>
+                        <td style="padding: 12px 14px;">
+                            <span class="badge" style="background: #e0e7ff; color: #3730a3; padding: 2px 6px;">{{ d.category }}</span>
+                        </td>
+                        <td style="padding: 12px 14px;">
+                            {{ d.uploaded_by.full_name if d.uploaded_by else 'System' }}
+                        </td>
+                        <td style="padding: 12px 14px;">
+                            <span class="badge" style="background: {% if d.verification_status == 'Verified' %}#d1fae5; color: #065f46;{% elif d.verification_status == 'Rejected' %}#fee2e2; color: #991b1b;{% else %}#fef3c7; color: #92400e;{% endif %} padding: 3px 8px; border-radius: 4px;">
+                                {{ d.verification_status or 'Pending' }}
+                            </span>
+                        </td>
+                        <td style="padding: 12px 14px; text-align: right;">
+                            <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                                <a href="{{ url_for('documents.download_file', doc_id=d.id) }}" class="btn btn-sm btn-outline" title="Download Document">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                {% if current_user.is_admin() or current_user.is_management() %}
+                                {% if d.verification_status != 'Verified' %}
+                                <form method="POST" action="{{ url_for('documents.verify_document', doc_id=d.id) }}" style="display: inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="verification_status" value="Verified">
+                                    <button type="submit" class="btn btn-sm btn-outline" style="color: #059669; border-color: #059669;" title="Mark Verified">
+                                        <i class="bi bi-check2"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                {% if d.verification_status != 'Rejected' %}
+                                <form method="POST" action="{{ url_for('documents.verify_document', doc_id=d.id) }}" style="display: inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="verification_status" value="Rejected">
+                                    <button type="submit" class="btn btn-sm btn-outline" style="color: #dc2626; border-color: #dc2626;" title="Mark Rejected">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 36px; color: var(--arch-muted);">
+                            <i class="bi bi-folder-x" style="font-size: 2rem; display: block; margin-bottom: 8px;"></i>
+                            No documents in this view.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

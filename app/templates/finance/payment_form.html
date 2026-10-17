@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 700px; margin: 0 auto;">
+    <h2 class="card-title">{{ title }}</h2>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            <label class="form-label">{{ form.brokerage_id.label.text }} *</label>
+            {{ form.brokerage_id(class="form-control") }}
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.amount.label.text }} *</label>
+                {{ form.amount(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.payment_date.label.text }} *</label>
+                {{ form.payment_date(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.payment_mode.label.text }}</label>
+                {{ form.payment_mode(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.transaction_ref.label.text }}</label>
+                {{ form.transaction_ref(class="form-control", placeholder="UTR / Reference / Cheque number") }}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">{{ form.notes.label.text }}</label>
+            {{ form.notes(class="form-control", rows=2) }}
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary">Save & Issue Receipt</button>
+            <a href="{{ url_for('finance.index') }}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

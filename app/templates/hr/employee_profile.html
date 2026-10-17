@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.full_name }} - Employee Profile - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="workspace-header">
+  <div class="workspace-title">
+    <h1>
+      <div class="avatar-hr" style="width: 38px; height: 38px; font-size: 14px; background: var(--brand-primary);">{{ user.full_name[0] }}</div>
+      {{ user.full_name }} ({{ user.employee_code or 'EMP-' ~ user.id }})
+    </h1>
+    <p>{{ user.role }} &bull; {{ user.department }} &bull; Manager: {{ user.reporting_manager or 'Executive Leadership' }}</p>
+  </div>
+  <div class="btn-group-custom">
+    <a href="{{ url_for('hr.employees_list') }}" class="btn-secondary-hr"><i class="bi bi-arrow-left"></i> Directory</a>
+    {% if current_user.has_role(Roles.SUPER_ADMIN, Roles.DIRECTOR, Roles.HR_OPS) %}
+    <a href="{{ url_for('hr.create_target') }}" class="btn-secondary-hr"><i class="bi bi-bullseye"></i> Set Target</a>
+    <button type="button" class="btn-primary-hr" onclick="openHrModal('uploadDocModal')"><i class="bi bi-cloud-arrow-up"></i> Upload KYC Doc</button>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card-container">
+  <!-- TAB BAR -->
+  <div class="profile-tab-bar">
+    <div class="profile-tab-item active" id="tab-btn-overview" onclick="switchProfileTab('overview')">Overview</div>
+    <div class="profile-tab-item" id="tab-btn-personal" onclick="switchProfileTab('personal')">Personal & Contacts</div>
+    <div class="profile-tab-item" id="tab-btn-documents" onclick="switchProfileTab('documents')">Documents & Verification ({{ documents|length }})</div>
+    <div class="profile-tab-item" id="tab-btn-attendance" onclick="switchProfileTab('attendance')">Attendance & Leave Balance</div>
+  </div>
+
+  <!-- TAB 1: OVERVIEW -->
+  <div class="profile-tab-pane active" id="tab-pane-overview">
+    <!-- Top Stats -->
+    <div class="kpi-grid" style="margin-bottom: 24px;">
+      <div class="kpi-card" style="cursor: default;">
+        <div class="kpi-title">Attendance Logged</div>
+        <div class="kpi-value">{{ attendance_history|length }} Days</div>
+        <div class="kpi-sub"><i class="bi bi-check-circle"></i> Active Tracking</div>
+      </div>
+      <div class="kpi-card" style="cursor: default;">
+        <div class="kpi-title">Compliance Docs</div>
+        <div class="kpi-value">{{ documents|length }} Files</div>
+        <div class="kpi-sub" style="color: var(--brand-primary);"><i class="bi bi-folder-check"></i> KYC & Verification</div>
+      </div>
+      <div class="kpi-card" style="cursor: default;">
+        <div class="kpi-title">Tasks Assigned</div>
+        <div class="kpi-value">{{ tasks|length }}</div>
+        <div class="kpi-sub" style="color: #64748B;"><i class="bi bi-list-task"></i> Operations & CRM</div>
+      </div>
+      <div class="kpi-card" style="cursor: default;">
+        <div class="kpi-title">Quarterly Appraisals</div>
+        <div class="kpi-value">{{ reviews|length }}</div>
+        <div class="kpi-sub" style="color: #166534;"><i class="bi bi-award"></i> Review Cycle</div>
+      </div>
+    </div>
+
+    <!-- Job & Employment Details -->
+    <div class="card-container" style="box-shadow: none; margin-bottom: 0;">
+      <div class="card-header-hr">
+        <h3><i class="bi bi-briefcase" style="color: var(--brand-primary);"></i> Employment & Job Information</h3>
+      </div>
+      <div style="padding: 18px;">
+        <div class="form-grid-3">
+          <div><span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Employee ID</span><br><b>{{ user.employee_code or 'EMP-' ~ user.id }}</b></div>
+          <div><span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Designation</span><br><b>{{ user.role }}</b></div>
+          <div><span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Department</span><br><b>{{ user.department }}</b></div>
+          <div><span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Reporting Manager</span><br><b>{{ user.reporting_manager or 'Executive Leadership' }}</b></div>
+          <div><span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Employment Type</span><br><b>{{ user.employment_type or 'Full-Time Permanent' }}</b></div>
+          <div><span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Work Base</span><br><b>{{ user.location or 'Ahmedabad Corporate Office' }}</b></div>
+          <div><span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Work Mode</span><br><b>{{ user.work_mode or 'Office & Field Hybrid' }}</b></div>
+          <div><span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Status</span><br>
+            {% if user.emp_status == 'Active' or not user.emp_status %}
+              <span class="badge-hr badge-active"><i class="bi bi-check-circle-fill"></i> Active</span>
+            {% elif user.emp_status == 'Probation' %}
+              <span class="badge-hr badge-probation"><i class="bi bi-hourglass-split"></i> Probation</span>
+            {% elif user.emp_status == 'Notice Period' %}
+              <span class="badge-hr badge-notice"><i class="bi bi-box-arrow-right"></i> Notice Period</span>
+            {% else %}
+              <span class="badge-hr badge-pending">{{ user.emp_status }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: PERSONAL & CONTACTS -->
+  <div class="profile-tab-pane" id="tab-pane-personal">
+    <div class="card-container" style="box-shadow: none; margin-bottom: 0;">
+      <div class="card-header-hr">
+        <h3><i class="bi bi-person-lines-fill" style="color: var(--brand-primary);"></i> Personal Identification & Emergency Records</h3>
+      </div>
+      <div style="padding: 18px;">
+        <div class="form-grid-3" style="row-gap: 20px;">
+          <div><span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Full Legal Name</span><br><b>{{ user.full_name }}</b></div>
+          <div><span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Official Email Address</span><br><b>{{ user.email }}</b></div>
+          <div><span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Mobile Number</span><br><b>{{ user.phone or 'Not set' }}</b></div>
+          <div><span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Date of Birth</span><br><b>{{ user.dob.strftime('%d %B %Y') if user.dob else 'Not recorded' }}</b></div>
+          <div><span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Gender</span><br><b>{{ user.gender or 'Not specified' }}</b></div>
+          <div><span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Emergency Contact Number</span><br><b style="color: #DC2626;">{{ user.emergency_contact or 'Not recorded' }}</b></div>
+          <div style="grid-column: span 2;"><span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Permanent Residential Address</span><br><b>{{ user.permanent_address or 'Ahmedabad, Gujarat, India' }}</b></div>
+          <div><span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Base City / Branch</span><br><b>{{ user.location or 'Ahmedabad HQ' }}</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: DOCUMENTS & VERIFICATION -->
+  <div class="profile-tab-pane" id="tab-pane-documents">
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+      <button type="button" class="btn-primary-hr btn-sm-hr" onclick="openHrModal('uploadDocModal')"><i class="bi bi-plus-circle"></i> Upload Document</button>
+    </div>
+    <table class="hr-table">
+      <thead>
+        <tr>
+          <th>Doc Code</th>
+          <th>Category</th>
+          <th>Document Title</th>
+          <th>Submission Date</th>
+          <th>Verification Status</th>
+          <th>Remarks</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for doc in documents %}
+        <tr>
+          <td><b>{{ doc.doc_code }}</b></td>
+          <td>{{ doc.category }}</td>
+          <td><b>{{ doc.document_name }}</b></td>
+          <td>{{ doc.upload_date.strftime('%d %b %Y') }}</td>
+          <td>
+            {% if doc.status == 'Verified' %}
+              <span class="badge-hr badge-verified"><i class="bi bi-check-circle-fill"></i> Verified</span>
+            {% elif doc.status == 'Pending Review' %}
+              <span class="badge-hr badge-pending"><i class="bi bi-hourglass-split"></i> Pending Review</span>
+            {% else %}
+              <span class="badge-hr badge-rejected"><i class="bi bi-x-circle-fill"></i> Rejected</span>
+            {% endif %}
+          </td>
+          <td style="color: var(--text-secondary); font-size: 11px;">{{ doc.notes or '&mdash;' }}</td>
+          <td style="text-align: right;">
+            {% if doc.status == 'Pending Review' and current_user.has_role(Roles.SUPER_ADMIN, Roles.DIRECTOR, Roles.HR_OPS) %}
+            <form method="POST" action="{{ url_for('hr.verify_document', doc_id=doc.id) }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn-primary-hr btn-sm-hr">Verify</button>
+            </form>
+            {% else %}
+            <span style="font-size: 11px; color: var(--text-secondary);">Processed</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 25px;">No compliance documents recorded for this employee.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TAB 4: ATTENDANCE & LEAVES -->
+  <div class="profile-tab-pane" id="tab-pane-attendance">
+    <!-- Leave Balances -->
+    <div class="split-grid-3" style="margin-bottom: 20px;">
+      <div class="card-container" style="padding: 16px; margin: 0;">
+        <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Casual Leave (CL)</span>
+        <div style="font-size: 22px; font-weight: 700; color: var(--text-primary); margin: 4px 0;">10 / 12 Days</div>
+        <div style="font-size: 11px; color: #166534;"><i class="bi bi-check-circle"></i> 2 Days Consumed</div>
+      </div>
+      <div class="card-container" style="padding: 16px; margin: 0;">
+        <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Sick Leave (SL)</span>
+        <div style="font-size: 22px; font-weight: 700; color: var(--text-primary); margin: 4px 0;">7 / 8 Days</div>
+        <div style="font-size: 11px; color: #166534;"><i class="bi bi-check-circle"></i> 1 Day Consumed</div>
+      </div>
+      <div class="card-container" style="padding: 16px; margin: 0;">
+        <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Privilege Leave (PL)</span>
+        <div style="font-size: 22px; font-weight: 700; color: var(--text-primary); margin: 4px 0;">15 / 15 Days</div>
+        <div style="font-size: 11px; color: #166534;"><i class="bi bi-check-circle"></i> Full Balance Intact</div>
+      </div>
+    </div>
+
+    <!-- Attendance History Table -->
+    <div class="card-container" style="box-shadow: none; margin-bottom: 20px;">
+      <div class="card-header-hr">
+        <h3><i class="bi bi-clock-history" style="color: var(--brand-primary);"></i> Attendance Log (Last 30 Days)</h3>
+      </div>
+      <table class="hr-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Check-In</th>
+            <th>Check-Out</th>
+            <th>Working Hours</th>
+            <th>Work Mode</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for att in attendance_history %}
+          <tr>
+            <td><b>{{ att.attendance_date.strftime('%d %b %Y') }}</b></td>
+            <td>{{ att.check_in_time.strftime('%I:%M %p') if att.check_in_time else '&mdash;' }}</td>
+            <td>{{ att.check_out_time.strftime('%I:%M %p') if att.check_out_time else '&mdash;' }}</td>
+            <td><b>{{ att.working_hours or 0 }} hrs</b></td>
+            <td><span class="badge-hr badge-matching">{{ att.work_mode }}</span></td>
+            <td>
+              {% if att.status == 'Present' %}
+                <span class="badge-hr badge-verified">Present</span>
+              {% elif att.status == 'Field Duty' %}
+                <span class="badge-hr badge-matching">Field Duty</span>
+              {% elif att.status == 'On Leave' %}
+                <span class="badge-hr badge-rejected">On Leave</span>
+              {% else %}
+                <span class="badge-hr badge-pending">{{ att.status }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 25px;">No attendance logged yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Leave Requests -->
+    <div class="card-container" style="box-shadow: none; margin-bottom: 0;">
+      <div class="card-header-hr">
+        <h3><i class="bi bi-calendar2-minus" style="color: var(--brand-primary);"></i> Leave Applications</h3>
+      </div>
+      <table class="hr-table">
+        <thead>
+          <tr>
+            <th>Leave Type</th>
+            <th>From Date</th>
+            <th>To Date</th>
+            <th>Reason</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in leave_requests %}
+          <tr>
+            <td><b>{{ l.leave_type }}</b></td>
+            <td>{{ l.start_date.strftime('%d %b %Y') }}</td>
+            <td>{{ l.end_date.strftime('%d %b %Y') }}</td>
+            <td>{{ l.reason }}</td>
+            <td>
+              {% if l.status == 'Approved' %}
+                <span class="badge-hr badge-verified"><i class="bi bi-check-circle-fill"></i> Approved</span>
+              {% elif l.status == 'Pending' %}
+                <span class="badge-hr badge-pending"><i class="bi bi-hourglass-split"></i> Pending Approval</span>
+              {% else %}
+                <span class="badge-hr badge-rejected"><i class="bi bi-x-circle-fill"></i> Rejected</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 25px;">No leave applications on file.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Upload KYC Document Modal -->
+<div class="modal-overlay-hr" id="uploadDocModal">
+  <div class="modal-body-hr">
+    <form method="POST" action="{{ url_for('hr.upload_document') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="user_id" value="{{ user.id }}">
+      <div class="modal-header-hr">
+        <h4>Upload Compliance Document: {{ user.full_name }}</h4>
+        <button type="button" class="modal-close-btn" onclick="closeHrModal('uploadDocModal')">&times;</button>
+      </div>
+      <div class="modal-content-hr">
+        <div class="form-group-hr">
+          <label>Document Category</label>
+          <select name="category" required>
+            <option value="Identity Proof">Identity Proof (Aadhar, PAN)</option>
+            <option value="Address Proof">Address Proof (Passport, Electricity Bill)</option>
+            <option value="Education Certificate">Education Certificate (Degree, Marksheet)</option>
+            <option value="Experience Letter">Experience Letter (Relieving, Offer)</option>
+            <option value="Bank Details">Bank Details (Cancelled Cheque, Passbook)</option>
+          </select>
+        </div>
+        <div class="form-group-hr">
+          <label>Document Title</label>
+          <input type="text" name="document_name" placeholder="e.g. PAN Card Scan Copy" required>
+        </div>
+        <div class="form-group-hr">
+          <label>Notes / Reference Remarks</label>
+          <textarea name="notes" rows="2" placeholder="Optional notes..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer-hr">
+        <button type="button" class="btn-secondary-hr" onclick="closeHrModal('uploadDocModal')">Cancel</button>
+        <button type="submit" class="btn-primary-hr">Upload to Vault</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

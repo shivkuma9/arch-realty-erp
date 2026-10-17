@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Site Visits & Meeting Calendar - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div>
+        <h1 class="page-title"><i class="bi bi-calendar3 text-primary"></i> Site Visits & Meetings Calendar</h1>
+        <p class="page-subtitle text-muted">Chronological itinerary: Site inspections, client presentations, proposal discussions, and closing meetings.</p>
+    </div>
+    <div style="display: flex; gap: 12px;">
+        <a href="{{ url_for('field.schedule_visit') }}" class="btn btn-primary">
+            <i class="bi bi-calendar-plus-fill"></i> Schedule Visit / Meeting
+        </a>
+        <a href="{{ url_for('field.visits_list') }}" class="btn btn-outline">
+            <i class="bi bi-list-ul"></i> Table View
+        </a>
+    </div>
+</div>
+
+<!-- Calendar Timeline View -->
+<div style="display: grid; grid-template-columns: 3fr 1fr; gap: 24px;">
+    <div>
+        {% if calendar_events %}
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+            {% for date_key, date_visits in calendar_events.items() %}
+            <div class="card" style="background: var(--arch-card-bg); border-radius: 8px; border: 1px solid var(--arch-border); overflow: hidden;">
+                <!-- Date Header -->
+                <div style="background: var(--arch-header-bg, #f8fafc); padding: 12px 20px; border-bottom: 1px solid var(--arch-border); display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="bi bi-calendar-event text-primary" style="font-size: 1.1rem;"></i>
+                        <span style="font-weight: 700; font-size: 0.95rem; color: var(--arch-text);">{{ date_key }}</span>
+                    </div>
+                    <span class="badge" style="background: #e0e7ff; color: #3730a3; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">
+                        {{ date_visits|length }} Scheduled
+                    </span>
+                </div>
+
+                <!-- Visits List on this Date -->
+                <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+                    {% for v in date_visits %}
+                    <div style="border: 1px solid var(--arch-border); border-radius: 6px; padding: 14px; display: flex; justify-content: space-between; align-items: center; background: #ffffff;">
+                        <div style="display: flex; gap: 16px; align-items: center;">
+                            <!-- Time Badge -->
+                            <div style="text-align: center; background: #eff6ff; color: #1d4ed8; padding: 8px 12px; border-radius: 6px; min-width: 90px;">
+                                <i class="bi bi-clock"></i>
+                                <div style="font-weight: 700; font-size: 0.85rem;">{{ v.visit_time.strftime('%I:%M %p') if v.visit_time else 'Anytime' }}</div>
+                            </div>
+
+                            <!-- Details -->
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <h4 style="margin: 0; font-size: 0.92rem; font-weight: 600;">
+                                        {{ v.property.title if v.property else 'Property Discussion' }}
+                                    </h4>
+                                    <span class="badge" style="background: {% if v.status == 'Completed' %}#d1fae5; color: #065f46;{% elif v.status == 'Cancelled' %}#fee2e2; color: #991b1b;{% else %}#fef3c7; color: #92400e;{% endif %} padding: 2px 6px; border-radius: 4px; font-size: 0.72rem;">
+                                        {{ v.status }}
+                                    </span>
+                                </div>
+                                <div style="font-size: 0.8rem; color: var(--arch-muted); margin-top: 4px;">
+                                    <i class="bi bi-geo-alt"></i> {{ v.property.locality if v.property else 'Office' }} &bull;
+                                    <i class="bi bi-person"></i> 
+                                    {% if v.client %}
+                                    Client: <strong>{{ v.client.name }}</strong> ({{ v.client.phone }})
+                                    {% elif v.lead %}
+                                    Lead: <strong>{{ v.lead.full_name }}</strong> ({{ v.lead.phone }})
+                                    {% else %}
+                                    Direct Visit
+                                    {% endif %}
+                                </div>
+                                <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+                                    Assigned Executive: <strong>{{ v.assigned_employee.full_name if v.assigned_employee else 'Unassigned' }}</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div style="display: flex; gap: 8px;">
+                            {% if v.status != 'Completed' %}
+                            <form method="POST" action="{{ url_for('field.check_in', visit_id=v.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="location" value="On-Site Check-in: {{ v.property.locality if v.property else 'Ahmedabad' }}">
+                                <button type="submit" class="btn btn-sm btn-primary" title="Check-in GPS on site">
+                                    <i class="bi bi-geo-fill"></i> Check-in
+                                </button>
+                            </form>
+                            {% else %}
+                            <span class="badge" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 4px 8px;">
+                                <i class="bi bi-check2-circle"></i> Checked in
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="card" style="background: var(--arch-card-bg); border-radius: 8px; border: 1px solid var(--arch-border); padding: 48px; text-align: center; color: var(--arch-muted);">
+            <i class="bi bi-calendar-x" style="font-size: 2.5rem; display: block; margin-bottom: 12px;"></i>
+            <h3>No visits or meetings scheduled</h3>
+            <p>Your calendar is currently clear. Click below to schedule a new site visit or client meeting.</p>
+            <a href="{{ url_for('field.schedule_visit') }}" class="btn btn-primary" style="margin-top: 12px;">
+                <i class="bi bi-plus-lg"></i> Schedule Visit
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right Sidebar Quick Stats -->
+    <div>
+        <div class="card" style="background: var(--arch-card-bg); border-radius: 8px; border: 1px solid var(--arch-border); padding: 20px; margin-bottom: 20px;">
+            <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 14px; border-bottom: 1px solid var(--arch-border); padding-bottom: 8px;">
+                <i class="bi bi-lightning-charge text-primary"></i> Itinerary Metrics
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.88rem;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span class="text-muted">Total Visits Listed</span>
+                    <strong>{{ visits|length }}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span class="text-muted">Unique Days</span>
+                    <strong>{{ calendar_events|length }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="background: var(--arch-card-bg); border-radius: 8px; border: 1px solid var(--arch-border); padding: 20px;">
+            <h4 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 12px;">
+                <i class="bi bi-info-circle text-primary"></i> Meeting Protocol
+            </h4>
+            <p style="font-size: 0.82rem; color: var(--arch-muted); line-height: 1.5; margin: 0;">
+                All field executives must perform on-site GPS check-in upon arrival. Submit client feedback and interest level immediately after visit conclusion to trigger next deal stages.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

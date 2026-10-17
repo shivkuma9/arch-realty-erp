@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Reports & Analytics - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Executive Reports & Data Exports</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Consolidated business intelligence and downloadable CSV datasets</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{{ url_for('reports.export_report_csv', report_type='leads') }}" class="btn btn-outline btn-sm">Export CRM CSV</a>
+        <a href="{{ url_for('reports.export_report_csv', report_type='financials') }}" class="btn btn-outline btn-sm">Export Financials CSV</a>
+        <a href="{{ url_for('reports.export_report_csv', report_type='inventory') }}" class="btn btn-outline btn-sm">Export Inventory CSV</a>
+    </div>
+</div>
+
+<!-- Financial Summary -->
+<div class="card">
+    <h3 class="card-title">Fiscal Performance Summary</h3>
+    <div class="grid-cols-4">
+        <div>
+            <span style="font-size: 0.75rem; color: var(--arch-text-muted); display: block;">EXPECTED BROKERAGE</span>
+            <strong style="font-size: 1.25rem;">{{ financials.expected | inr }}</strong>
+        </div>
+        <div>
+            <span style="font-size: 0.75rem; color: var(--arch-text-muted); display: block;">COLLECTIONS RECEIVED</span>
+            <strong style="font-size: 1.25rem; color: var(--arch-success);">{{ financials.received | inr }}</strong>
+        </div>
+        <div>
+            <span style="font-size: 0.75rem; color: var(--arch-text-muted); display: block;">OUTSTANDING AMOUNT</span>
+            <strong style="font-size: 1.25rem; color: var(--arch-danger);">{{ financials.outstanding | inr }}</strong>
+        </div>
+        <div>
+            <span style="font-size: 0.75rem; color: var(--arch-text-muted); display: block;">NET REVENUE MARGIN</span>
+            <strong style="font-size: 1.25rem; color: var(--arch-blue-primary);">{{ financials.net | inr }}</strong>
+        </div>
+    </div>
+</div>
+
+<div class="grid-cols-2">
+    <!-- Executive Performance Table -->
+    <div class="card" style="padding: 0;">
+        <div style="padding: 1rem; border-bottom: 1px solid var(--arch-border); font-weight: 600;">
+            Team Performance & Closures
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Executive</th>
+                        <th>Leads Handled</th>
+                        <th>Closed Volume</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in exec_performance %}
+                    <tr>
+                        <td><strong>{{ p[0] }}</strong></td>
+                        <td>{{ p[1] }}</td>
+                        <td><strong style="color: var(--arch-success);">{{ p[2] | inr }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Lead Ingestion Sources -->
+    <div class="card" style="padding: 0;">
+        <div style="padding: 1rem; border-bottom: 1px solid var(--arch-border); font-weight: 600;">
+            Inbound Lead Sources
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Channel / Source</th>
+                        <th>Total Inquiries</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in lead_sources %}
+                    <tr>
+                        <td>{{ s[0] }}</td>
+                        <td><strong>{{ s[1] }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

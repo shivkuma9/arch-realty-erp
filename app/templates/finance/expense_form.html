@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 750px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <div>
+            <h2 class="card-title" style="margin: 0;">{{ title }}</h2>
+            <p style="color: var(--arch-gray-600); font-size: 0.85rem; margin-top: 0.25rem;">
+                Record operational, travel, marketing, or general office expenditures for ARCH Realty.
+            </p>
+        </div>
+        <span class="badge badge-info">Accounting</span>
+    </div>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            <label class="form-label">{{ form.title.label.text }} *</label>
+            {{ form.title(class="form-control", placeholder="e.g. July Portal Advertising (MagicBricks/99acres) or Site Fuel Voucher") }}
+            {% if form.title.errors %}
+                <span class="text-danger" style="font-size: 0.8rem;">{{ form.title.errors[0] }}</span>
+            {% endif %}
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.category.label.text }} *</label>
+                {{ form.category(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.amount.label.text }} *</label>
+                {{ form.amount(class="form-control", placeholder="Amount in ₹") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.expense_date.label.text }} *</label>
+                {{ form.expense_date(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.paid_to.label.text }} *</label>
+                {{ form.paid_to(class="form-control", placeholder="Vendor / Staff / Service Provider name") }}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">{{ form.payment_mode.label.text }}</label>
+            {{ form.payment_mode(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">{{ form.notes.label.text }}</label>
+            {{ form.notes(class="form-control", rows=3, placeholder="Bill number, invoice reference, or expense justification...") }}
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary">Save Expense Record</button>
+            <a href="{{ url_for('finance.index') }}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

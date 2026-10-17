@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Employee Documents Repository - ARCH Realty HRMS{% endblock %}
+
+{% block content %}
+<div class="workspace-header">
+  <div class="workspace-title">
+    <h1><i class="bi bi-file-earmark-check-fill" style="color: var(--brand-primary);"></i> Employee Document Repository</h1>
+    <p>Track, verify, and upload corporate compliance and identity documents</p>
+  </div>
+  <div class="btn-group-custom">
+    <a href="{{ url_for('hr.hr_dashboard') }}" class="btn-secondary-hr"><i class="bi bi-speedometer2"></i> Command Center</a>
+    <button type="button" class="btn-primary-hr" onclick="openHrModal('newDocModal')"><i class="bi bi-cloud-arrow-up"></i> + Upload Document</button>
+  </div>
+</div>
+
+<div class="card-container">
+  <!-- Filters Toolbar -->
+  <form method="GET" action="{{ url_for('hr.documents_list') }}" class="table-toolbar">
+    <i class="bi bi-filter" style="color: var(--text-secondary);"></i>
+    
+    <select name="status" onchange="this.form.submit()">
+      <option value="All" {% if current_status == 'All' %}selected{% endif %}>All Verification Statuses</option>
+      <option value="Pending Review" {% if current_status == 'Pending Review' %}selected{% endif %}>Pending Review</option>
+      <option value="Verified" {% if current_status == 'Verified' %}selected{% endif %}>Verified</option>
+      <option value="Rejected" {% if current_status == 'Rejected' %}selected{% endif %}>Rejected</option>
+    </select>
+
+    <select name="category" onchange="this.form.submit()">
+      {% for c in categories %}
+      <option value="{{ c }}" {% if current_category == c %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+
+    <a href="{{ url_for('hr.documents_list') }}" class="btn-secondary-hr btn-sm-hr"><i class="bi bi-arrow-counterclockwise"></i> Reset Filters</a>
+  </form>
+
+  <!-- Table -->
+  <table class="hr-table">
+    <thead>
+      <tr>
+        <th>Doc ID</th>
+        <th>Employee Name</th>
+        <th>Category</th>
+        <th>Document Name</th>
+        <th>Submission Date</th>
+        <th>Verification Status</th>
+        <th>Notes / Remarks</th>
+        <th style="text-align: right;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for doc in documents %}
+      <tr>
+        <td><b>{{ doc.doc_code }}</b></td>
+        <td>
+          <a href="{{ url_for('hr.employee_profile', user_id=doc.user.id) }}" style="font-weight: 600; color: var(--brand-primary); text-decoration: none;">
+            {{ doc.user.full_name }}
+          </a>
+          <div style="font-size: 10px; color: var(--text-secondary);">{{ doc.user.department }}</div>
+        </td>
+        <td>{{ doc.category }}</td>
+        <td><b>{{ doc.document_name }}</b></td>
+        <td>{{ doc.upload_date.strftime('%d %b %Y') }}</td>
+        <td>
+          {% if doc.status == 'Verified' %}
+            <span class="badge-hr badge-verified"><i class="bi bi-check-circle-fill"></i> Verified</span>
+          {% elif doc.status == 'Pending Review' %}
+            <span class="badge-hr badge-pending"><i class="bi bi-hourglass-split"></i> Pending Review</span>
+          {% else %}
+            <span class="badge-hr badge-rejected"><i class="bi bi-x-circle-fill"></i> Rejected</span>
+          {% endif %}
+        </td>
+        <td style="color: var(--text-secondary); font-size: 11px;">{{ doc.notes or '&mdash;' }}</td>
+        <td style="text-align: right;">
+          {% if doc.status == 'Pending Review' %}
+          <div style="display: flex; gap: 6px; justify-content: flex-end;">
+            <form method="POST" action="{{ url_for('hr.verify_document', doc_id=doc.id) }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn-primary-hr btn-sm-hr">Verify</button>
+            </form>
+            <button type="button" class="btn-danger-hr btn-sm-hr" onclick="openHrModal('rejectDocModal{{ doc.id }}')">Reject</button>
+          </div>
+
+          <!-- Reject Modal -->
+          <div class="modal-overlay-hr" id="rejectDocModal{{ doc.id }}">
+            <div class="modal-body-hr" style="text-align: left;">
+              <form method="POST" action="{{ url_for('hr.reject_document', doc_id=doc.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header-hr">
+                  <h4>Reject Document: {{ doc.document_name }}</h4>
+                  <button type="button" class="modal-close-btn" onclick="closeHrModal('rejectDocModal{{ doc.id }}')">&times;</button>
+                </div>
+                <div class="modal-content-hr">
+                  <div class="form-group-hr">
+                    <label>Reason for rejection / deficiency notice:</label>
+                    <textarea name="notes" rows="3" placeholder="Provide feedback so employee can re-upload..." required></textarea>
+                  </div>
+                </div>
+                <div class="modal-footer-hr">
+                  <button type="button" class="btn-secondary-hr" onclick="closeHrModal('rejectDocModal{{ doc.id }}')">Cancel</button>
+                  <button type="submit" class="btn-danger-hr">Confirm Rejection</button>
+                </div>
+              </form>
+            </div>
+          </div>
+          {% else %}
+            <span style="font-size: 11px; color: var(--text-secondary);"><i class="bi bi-check2"></i> Processed</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="8" style="text-align: center; color: var(--text-secondary); padding: 30px;">No compliance documents match specified filters.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Upload New Document Modal -->
+<div class="modal-overlay-hr" id="newDocModal">
+  <div class="modal-body-hr">
+    <form method="POST" action="{{ url_for('hr.upload_document') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header-hr">
+        <h4>Upload Employee Compliance Document</h4>
+        <button type="button" class="modal-close-btn" onclick="closeHrModal('newDocModal')">&times;</button>
+      </div>
+      <div class="modal-content-hr">
+        <div class="form-group-hr">
+          <label>Employee Name</label>
+          <select name="user_id" required>
+            <option value="">-- Select Employee --</option>
+            {% for u in users %}
+            <option value="{{ u.id }}">{{ u.full_name }} ({{ u.department }} - {{ u.role }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group-hr">
+          <label>Document Category</label>
+          <select name="category" required>
+            <option value="Identity Proof">Identity Proof (Aadhar, PAN Card)</option>
+            <option value="Address Proof">Address Proof (Passport, Electricity Bill)</option>
+            <option value="Education Certificate">Education Certificate (Graduation, Degree)</option>
+            <option value="Experience Letter">Experience Letter (Relieving, Offer)</option>
+            <option value="Bank Details">Bank Details (Cancelled Cheque, Passbook)</option>
+          </select>
+        </div>
+        <div class="form-group-hr">
+          <label>Document Title</label>
+          <input type="text" name="document_name" placeholder="e.g. Aadhar Card Scan Copy" required>
+        </div>
+        <div class="form-group-hr">
+          <label>Notes / Description</label>
+          <textarea name="notes" rows="2" placeholder="Optional notes..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer-hr">
+        <button type="button" class="btn-secondary-hr" onclick="closeHrModal('newDocModal')">Cancel</button>
+        <button type="submit" class="btn-primary-hr">Save Document</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

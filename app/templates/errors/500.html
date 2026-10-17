@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - 500{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 4rem auto; text-align: center; padding: 3rem;">
+    <h1 style="font-size: 3rem; color: var(--arch-warning);">500</h1>
+    <h2 style="margin: 0.5rem 0;">Internal System Error</h2>
+    <p style="color: var(--arch-text-muted); margin-bottom: 1.5rem;">An unexpected server error occurred. The incident has been recorded in the security audit logs.</p>
+    <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">Back to Dashboard</a>
+</div>
+{% endblock %}

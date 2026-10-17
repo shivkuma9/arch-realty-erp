@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Recruitment & Hiring Pipeline - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Talent Acquisition & Hiring Pipeline</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">
+            End-to-end recruitment tracking for BDEs, sales managers, field executives, and corporate staff
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('hr.create_recruitment') }}" class="btn btn-primary btn-sm">+ Register Candidate</a>
+    </div>
+</div>
+
+<div class="card" style="padding: 0;">
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Ref Code</th>
+                    <th>Candidate Name</th>
+                    <th>Target Role</th>
+                    <th>Department</th>
+                    <th>Contact Info</th>
+                    <th>Source</th>
+                    <th>Interview Schedule</th>
+                    <th>Stage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in candidates %}
+                <tr>
+                    <td><strong>{{ c.recruitment_code }}</strong></td>
+                    <td>
+                        <strong style="color: var(--arch-blue-primary);">{{ c.candidate_name }}</strong>
+                    </td>
+                    <td>{{ c.position }}</td>
+                    <td><span class="badge badge-secondary">{{ c.department }}</span></td>
+                    <td>
+                        <span><i class="bi bi-telephone"></i> {{ c.phone }}</span><br>
+                        {% if c.email %}<small style="color: var(--arch-text-muted);"><i class="bi bi-envelope"></i> {{ c.email }}</small>{% endif %}
+                    </td>
+                    <td>{{ c.source }}</td>
+                    <td>
+                        {% if c.interview_date %}
+                            {{ c.interview_date.strftime('%d %b %Y, %I:%M %p') }}
+                        {% else %}
+                            <span style="color: var(--arch-text-muted); font-size: 0.8rem;">Not Scheduled</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge {% if c.stage == 'Joined' %}badge-success{% elif c.stage == 'Offered' %}badge-info{% elif c.stage == 'Rejected' %}badge-danger{% else %}badge-warning{% endif %}">
+                            {{ c.stage }}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 2.5rem; color: var(--arch-text-muted);">
+                        No recruitment candidates registered. Click '+ Register Candidate' above.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

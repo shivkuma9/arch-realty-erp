@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}{{ deal.deal_code }} - {{ deal.title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <h1 class="page-title">{{ deal.title }}</h1>
+            <span class="badge badge-info">{{ deal.stage }}</span>
+            <span class="badge badge-primary">{{ deal.deal_code }}</span>
+        </div>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Client: <strong>{{ deal.client.name }}</strong> • Property: <strong>{{ deal.property.title }}</strong></p>
+    </div>
+</div>
+
+<div class="grid-cols-2">
+    <!-- Deal Overview & Stage Progression -->
+    <div>
+        <div class="card">
+            <h3 class="card-title">Deal Progress & Stage Control</h3>
+            <form method="POST" action="{{ url_for('deals.update_stage', deal_id=deal.id) }}" style="margin-bottom: 1.5rem;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <select name="stage" class="form-control">
+                        {% for s in stages %}
+                        <option value="{{ s }}" {% if deal.stage == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="text" name="final_value" value="{{ deal.final_value }}" placeholder="Agreed Value (₹)" class="form-control" style="width: 150px;">
+                </div>
+                <input type="text" name="comments" placeholder="Comments on stage update..." class="form-control" style="margin-bottom: 0.75rem;">
+                <button type="submit" class="btn btn-primary btn-sm">Update Stage</button>
+            </form>
+
+            <table class="arch-table">
+                <tr>
+                    <td style="color: var(--arch-text-muted);">Agreed Consideration</td>
+                    <td><strong style="color: var(--arch-blue-primary); font-size: 1.1rem;">{{ (deal.final_value or deal.expected_value) | inr }}</strong></td>
+                </tr>
+                <tr>
+                    <td style="color: var(--arch-text-muted);">Agreement Status</td>
+                    <td><span class="badge badge-secondary">{{ deal.agreement_status }}</span></td>
+                </tr>
+                <tr>
+                    <td style="color: var(--arch-text-muted);">Target Closing Date</td>
+                    <td>{{ deal.expected_closing_date or 'Not specified' }}</td>
+                </tr>
+                <tr>
+                    <td style="color: var(--arch-text-muted);">Deal Closing Manager</td>
+                    <td>{{ deal.owner_user.full_name }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Stage Audit History -->
+        <div class="card">
+            <h3 class="card-title">Stage Progression Audit Trail</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {% for h in stage_histories %}
+                <div style="border-left: 2px solid var(--arch-accent); padding-left: 0.75rem;">
+                    <strong>{{ h.new_stage }}</strong>
+                    {% if h.previous_stage %}<span style="font-size: 0.8rem; color: var(--arch-text-muted);">(from {{ h.previous_stage }})</span>{% endif %}
+                    <div style="font-size: 0.75rem; color: var(--arch-text-muted);">By {{ h.changed_by.full_name }} • {{ h.created_at.strftime('%d %b %Y, %I:%M %p') }}</div>
+                    {% if h.comments %}
+                    <p style="font-size: 0.8rem; margin-top: 0.25rem;">{{ h.comments }}</p>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p style="color: var(--arch-text-muted); font-size: 0.85rem;">No stage history recorded.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Brokerage & Financial Linked Card -->
+    <div>
+        <div class="card">
+            <h3 class="card-title">Brokerage Receivable</h3>
+            {% if brokerage %}
+            <table class="arch-table">
+                <tr>
+                    <td style="color: var(--arch-text-muted);">Rule Model</td>
+                    <td>{{ brokerage.rule_type }} (Client: {{ brokerage.client_percentage }}% | Owner: {{ brokerage.owner_percentage }}%)</td>
+                </tr>
+                <tr>
+                    <td style="color: var(--arch-text-muted);">Total Expected Fee</td>
+                    <td><strong>{{ brokerage.expected_amount | inr }}</strong></td>
+                </tr>
+                <tr>
+                    <td style="color: var(--arch-text-muted);">Received Collections</td>
+                    <td><strong style="color: var(--arch-success);">{{ brokerage.received_amount | inr }}</strong></td>
+                </tr>
+                <tr>
+                    <td style="color: var(--arch-text-muted);">Outstanding Balance</td>
+                    <td><strong style="color: var(--arch-danger);">{{ brokerage.outstanding_amount | inr }}</strong></td>
+                </tr>
+                <tr>
+                    <td style="color: var(--arch-text-muted);">Status</td>
+                    <td>
+                        <span class="badge {% if brokerage.status == 'Fully Paid' %}badge-success{% else %}badge-warning{% endif %}">
+                            {{ brokerage.status }}
+                        </span>
+                    </td>
+                </tr>
+            </table>
+
+            {% if current_user.is_accounts() %}
+            <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                <form method="POST" action="{{ url_for('finance.generate_invoice', brokerage_id=brokerage.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline btn-sm"><i class="bi bi-file-earmark-text"></i> Generate GST Invoice</button>
+                </form>
+                <a href="{{ url_for('finance.record_payment') }}" class="btn btn-primary btn-sm"><i class="bi bi-credit-card-2-front"></i> Record Payment Receipt</a>
+            </div>
+            {% endif %}
+            {% else %}
+            <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Brokerage record will be generated automatically upon closing or negotiation.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

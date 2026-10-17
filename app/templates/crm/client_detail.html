@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}{{ client.client_code }} - {{ client.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <h1 class="page-title">{{ client.name }}</h1>
+            <span class="badge badge-secondary">{{ client.client_type }}</span>
+            <span class="badge badge-primary">{{ client.client_code }}</span>
+        </div>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Relationship Manager: {{ client.assigned_rm.full_name if client.assigned_rm else 'Unassigned' }}</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{{ url_for('deals.create_deal') }}" class="btn btn-primary btn-sm">+ Initiate Deal</a>
+        <a href="{{ url_for('crm.client_edit', client_id=client.id) }}" class="btn btn-outline btn-sm">Edit Profile</a>
+    </div>
+</div>
+
+<div class="grid-cols-2">
+    <!-- Client Info -->
+    <div class="card">
+        <h3 class="card-title">Client Details & KYC</h3>
+        <table class="arch-table">
+            <tr>
+                <td style="width: 35%; color: var(--arch-text-muted);">Company / Org</td>
+                <td><strong>{{ client.company_name or 'N/A' }}</strong></td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">GST Number</td>
+                <td>{{ client.gst_number or 'Not provided' }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">PAN Number</td>
+                <td>{{ client.pan_number or 'Not provided' }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">Phone</td>
+                <td><a href="tel:{{ client.phone }}">{{ client.phone }}</a></td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">Email</td>
+                <td>{{ client.email or 'Not provided' }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">Target Localities</td>
+                <td>{{ client.preferred_locations or 'Ahmedabad Wide' }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">Budget Guideline</td>
+                <td>{{ client.budget_range or 'Open' }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">Address</td>
+                <td>{{ client.address or 'N/A' }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Active Deals & Pipeline Linked -->
+    <div>
+        <div class="card">
+            <h3 class="card-title">Linked Deals & Pipeline</h3>
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Deal Code</th>
+                        <th>Property</th>
+                        <th>Stage</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in client.deals %}
+                    <tr>
+                        <td><a href="{{ url_for('deals.detail', deal_id=d.id) }}"><strong>{{ d.deal_code }}</strong></a></td>
+                        <td>{{ d.property.title }}</td>
+                        <td><span class="badge badge-info">{{ d.stage }}</span></td>
+                        <td>{{ (d.final_value or d.expected_value) | inr }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" style="text-align: center; color: var(--arch-text-muted);">No deals linked yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3 class="card-title">Site Visits History</h3>
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Property</th>
+                        <th>Executive</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in client.site_visits %}
+                    <tr>
+                        <td>{{ v.visit_date }}</td>
+                        <td>{{ v.property.title }}</td>
+                        <td>{{ v.assigned_employee.full_name }}</td>
+                        <td><span class="badge badge-warning">{{ v.status }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" style="text-align: center; color: var(--arch-text-muted);">No site visits logged.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

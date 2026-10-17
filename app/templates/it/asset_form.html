@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Register IT Asset - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Register Brokerage & Field IT Asset</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Register laser distance meters, 360° virtual tour cameras, field presentation tablets, agent laptops, or office vault hardware</p>
+    </div>
+    <a href="{{ url_for('it.assets_list') }}" class="btn btn-outline btn-sm"><i class="bi bi-arrow-left"></i> Back to Assets</a>
+</div>
+
+<div class="card" style="max-width: 700px; margin: 0 auto; padding: 2rem;">
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+            <label class="form-label" style="font-weight: 600;">Asset Name & Model *</label>
+            <input type="text" name="asset_name" class="form-control" placeholder="e.g. Bosch GLM 50 C Bluetooth Laser Distance Meter" required>
+        </div>
+
+        <div class="grid-cols-2" style="gap: 1rem; margin-bottom: 1.25rem;">
+            <div class="form-group">
+                <label class="form-label" style="font-weight: 600;">Category *</label>
+                <select name="category" class="form-control" required>
+                    <option value="Field Survey (Laser Disto Meter)">Field Survey (Laser Disto Meter)</option>
+                    <option value="Field Survey (360° Tour Camera / Drone)">Field Survey (360° Virtual Tour Camera / Drone)</option>
+                    <option value="Mobile & Tablet (Client Presentation)">Mobile & Tablet (Client Presentation & On-Site GPS)</option>
+                    <option value="Agent Laptop / Workstation">Agent Laptop / Workstation</option>
+                    <option value="Office Network & Title Deeds Vault">Office Network & Title Deeds Data Vault</option>
+                    <option value="Peripherals & Floorplan Plotters">Peripherals & Large Format Floorplan Plotters</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" style="font-weight: 600;">Serial / Service Tag Number</label>
+                <input type="text" name="serial_number" class="form-control" placeholder="e.g. CN-0D348X-7789">
+            </div>
+        </div>
+
+        <div class="grid-cols-2" style="gap: 1rem; margin-bottom: 1.25rem;">
+            <div class="form-group">
+                <label class="form-label" style="font-weight: 600;">Allocate Directly to Employee</label>
+                <select name="allocated_to_id" class="form-control">
+                    <option value="">-- Keep in IT Storage (Available) --</option>
+                    {% for u in users %}
+                    <option value="{{ u.id }}">{{ u.full_name }} ({{ u.role }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" style="font-weight: 600;">Purchase Cost (INR)</label>
+                <input type="number" step="0.01" name="purchase_cost" class="form-control" placeholder="e.g. 75000">
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label class="form-label" style="font-weight: 600;">Specifications & Configuration Notes</label>
+            <textarea name="notes" class="form-control" rows="3" placeholder="Windows 11 Pro, Office 365 license activated, Antivirus installed..."></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+            <a href="{{ url_for('it.assets_list') }}" class="btn btn-outline">Cancel</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Register Asset</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

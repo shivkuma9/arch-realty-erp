@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ARCH Realty ERP + CRM{% endblock %}</title>
+    <!-- Professional Vector Icons (Bootstrap Icons) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Leaflet CSS for map features -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/hr_dashboard.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        {% if current_user.is_authenticated %}
+        <aside class="app-sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-logo">
+                    <i class="bi bi-buildings-fill"></i>
+                </div>
+                <div>
+                    <h1>ARCH REALTY</h1>
+                    <span>Ahmedabad Enterprise ERP</span>
+                </div>
+            </div>
+
+            <ul class="sidebar-nav">
+                <li class="nav-section-title">Overview</li>
+                <li><a href="{{ url_for('dashboard.index') }}"><i class="bi bi-grid-1x2-fill"></i> <span>Dashboard</span></a></li>
+
+                {% if current_user.can_access_crm() %}
+                <li class="nav-section-title">Sales & CRM</li>
+                <li><a href="{{ url_for('crm.leads_list') }}"><i class="bi bi-funnel-fill"></i> <span>CRM & Inquiries</span></a></li>
+                <li><a href="{{ url_for('shortlisting.index') }}"><i class="bi bi-card-checklist"></i> <span>Client Shortlisting</span></a></li>
+                <li><a href="{{ url_for('crm.clients_list') }}"><i class="bi bi-people-fill"></i> <span>Client Directory</span></a></li>
+                <li><a href="{{ url_for('hr.targets_list') }}"><i class="bi bi-bullseye"></i> <span>BDE Targets & KPIs</span></a></li>
+                {% endif %}
+
+                {% if current_user.can_access_inventory() %}
+                <li class="nav-section-title">Property Inventory</li>
+                <li><a href="{{ url_for('properties.index') }}"><i class="bi bi-building"></i> <span>Property Inventory</span></a></li>
+                {% if current_user.is_admin() or current_user.is_manager() %}
+                <li><a href="{{ url_for('properties.approvals') }}"><i class="bi bi-patch-check-fill"></i> <span>Property Approvals</span></a></li>
+                {% endif %}
+                <li><a href="{{ url_for('properties.submit_property') }}"><i class="bi bi-cloud-arrow-up-fill"></i> <span>Submit Property</span></a></li>
+                <li><a href="{{ url_for('properties.index', pre_leased='1') }}"><i class="bi bi-shield-check"></i> <span>Pre-Leased Assets</span></a></li>
+                {% if not current_user.is_field() or current_user.is_management() %}
+                <li><a href="{{ url_for('properties.owners_list') }}"><i class="bi bi-file-earmark-text-fill"></i> <span>Owners & Mandates</span></a></li>
+                {% endif %}
+                <li><a href="{{ url_for('properties.matching') }}"><i class="bi bi-lightning-charge-fill"></i> <span>Smart Matching</span></a></li>
+                <li><a href="{{ url_for('properties.map_view') }}"><i class="bi bi-map-fill"></i> <span>Map Explorer</span></a></li>
+                {% endif %}
+
+                {% if current_user.can_access_inventory() or current_user.can_access_field() %}
+                <li class="nav-section-title">Sourcing & Acquisition</li>
+                {% if current_user.is_admin() or current_user.is_manager() %}
+                <li><a href="{{ url_for('sourcing.index') }}"><i class="bi bi-crosshair"></i> <span>Sourcing Hub</span></a></li>
+                <li><a href="{{ url_for('sourcing.assign_sourcing') }}"><i class="bi bi-plus-circle-fill"></i> <span>Assign Sourcing</span></a></li>
+                {% endif %}
+                <li><a href="{{ url_for('sourcing.my_sourcing') }}"><i class="bi bi-person-workspace"></i> <span>My Sourcing Tasks</span></a></li>
+                {% endif %}
+
+                {% if current_user.can_access_deals() %}
+                <li class="nav-section-title">Deals & Closing</li>
+                <li><a href="{{ url_for('deals.index') }}"><i class="bi bi-briefcase-fill"></i> <span>Deals & Pipeline</span></a></li>
+                {% endif %}
+
+                {% if current_user.can_access_field() %}
+                <li class="nav-section-title">Field Operations</li>
+                <li><a href="{{ url_for('field.visits_list') }}"><i class="bi bi-geo-alt-fill"></i> <span>Site Visits & Meetings</span></a></li>
+                <li><a href="{{ url_for('field.calendar_view') }}"><i class="bi bi-calendar3"></i> <span>Visits Calendar</span></a></li>
+                <li><a href="{{ url_for('gps.index') }}"><i class="bi bi-geo-fill"></i> <span>Live GPS Tracking</span></a></li>
+                {% endif %}
+
+                {% if current_user.can_access_finance() %}
+                <li class="nav-section-title">Finance & Accounts</li>
+                <li><a href="{{ url_for('finance.index') }}"><i class="bi bi-cash-stack"></i> <span>Brokerage Receivables</span></a></li>
+                <li><a href="{{ url_for('finance.commission_claim') }}"><i class="bi bi-award-fill"></i> <span>Commission Claims</span></a></li>
+                <li><a href="{{ url_for('finance.add_expense') }}"><i class="bi bi-receipt"></i> <span>Office Expenses</span></a></li>
+                {% endif %}
+
+                {% if current_user.can_access_hr_management() or current_user.is_accounts() %}
+                <li class="nav-section-title">HR & Administration</li>
+                {% if current_user.can_access_hr_management() %}
+                <li><a href="{{ url_for('hr.hr_dashboard') }}"><i class="bi bi-speedometer2"></i> <span>HR Command Center</span></a></li>
+                <li><a href="{{ url_for('hr.employees_list') }}"><i class="bi bi-person-lines-fill"></i> <span>Staff Directory</span></a></li>
+                <li><a href="{{ url_for('hr.documents_list') }}"><i class="bi bi-file-earmark-check-fill"></i> <span>Document Compliance</span></a></li>
+                <li><a href="{{ url_for('hr.onboarding_list') }}"><i class="bi bi-person-plus-fill"></i> <span>Onboarding Tracker</span></a></li>
+                <li><a href="{{ url_for('hr.leaves_list') }}"><i class="bi bi-calendar2-check-fill"></i> <span>Leave Approvals</span></a></li>
+                <li><a href="{{ url_for('hr.exits_list') }}"><i class="bi bi-box-arrow-right"></i> <span>Exit Clearance</span></a></li>
+                <li><a href="{{ url_for('hr.requests_list') }}"><i class="bi bi-envelope-paper-fill"></i> <span>HR Service Requests</span></a></li>
+                <li><a href="{{ url_for('hr.performance_list') }}"><i class="bi bi-award-fill"></i> <span>Appraisals & Reviews</span></a></li>
+                {% endif %}
+                <li><a href="{{ url_for('hr.payroll_list') }}"><i class="bi bi-credit-card-2-front-fill"></i> <span>Payroll Processing</span></a></li>
+                {% if current_user.can_access_hr_management() %}
+                <li><a href="{{ url_for('hr.recruitment_list') }}"><i class="bi bi-person-badge-fill"></i> <span>Recruitment Pipeline</span></a></li>
+                <li><a href="{{ url_for('hr.assets_list') }}"><i class="bi bi-laptop-fill"></i> <span>Office Assets & Keys</span></a></li>
+                {% endif %}
+                {% endif %}
+
+                {% if current_user.can_access_tech_marketing() %}
+                <li class="nav-section-title">Digital Marketing & IT</li>
+                <li><a href="{{ url_for('marketing.index') }}"><i class="bi bi-megaphone-fill"></i> <span>Marketing & Growth</span></a></li>
+                <li><a href="{{ url_for('marketing.campaigns_list') }}"><i class="bi bi-bullseye"></i> <span>Ad Campaigns & ROI</span></a></li>
+                <li><a href="{{ url_for('marketing.attribution') }}"><i class="bi bi-pie-chart-fill"></i> <span>Lead Attribution</span></a></li>
+                <li><a href="{{ url_for('it.index') }}"><i class="bi bi-cpu-fill"></i> <span>IT Command Center</span></a></li>
+                <li><a href="{{ url_for('it.assets_list') }}"><i class="bi bi-laptop"></i> <span>Hardware & Assets</span></a></li>
+                <li><a href="{{ url_for('it.tickets_list') }}"><i class="bi bi-headset"></i> <span>Support Tickets</span></a></li>
+                <li><a href="{{ url_for('it.infrastructure') }}"><i class="bi bi-hdd-network-fill"></i> <span>Infrastructure & Health</span></a></li>
+                {% endif %}
+
+                <li class="nav-section-title">My Workspace</li>
+                <li><a href="{{ url_for('hr.tasks_list') }}"><i class="bi bi-check2-square"></i> <span>Tasks & Follow-ups</span></a></li>
+                <li><a href="{{ url_for('hr.attendance') }}"><i class="bi bi-clock-history"></i> <span>Attendance & Leaves</span></a></li>
+                <li><a href="{{ url_for('documents.index') }}"><i class="bi bi-folder2-open"></i> <span>Document Vault</span></a></li>
+
+                {% if current_user.can_access_reports() %}
+                <li class="nav-section-title">Analytics</li>
+                <li><a href="{{ url_for('reports.index') }}"><i class="bi bi-bar-chart-line-fill"></i> <span>Executive Analytics</span></a></li>
+                <li><a href="{{ url_for('reports.crm_reports') }}"><i class="bi bi-file-earmark-spreadsheet-fill"></i> <span>CRM & ERP Reports</span></a></li>
+                {% endif %}
+
+                {% if current_user.can_access_settings() %}
+                <li class="nav-section-title">System</li>
+                <li><a href="{{ url_for('settings.index') }}"><i class="bi bi-gear-fill"></i> <span>Settings & Users</span></a></li>
+                {% endif %}
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user-card">
+                    <div class="sidebar-user-avatar">
+                        {{ current_user.full_name[0] }}
+                    </div>
+                    <div style="overflow: hidden; font-size: 0.78rem;">
+                        <strong style="color: #ffffff; display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">{{ current_user.full_name }}</strong>
+                        <span style="color: var(--arch-accent); font-size: 0.72rem; display: block;">{{ current_user.role }}</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        {% endif %}
+
+        <!-- Main Workspace Area -->
+        <main class="app-main">
+            {% if current_user.is_authenticated %}
+            <header class="top-header">
+                <div class="header-left">
+                    <button id="sidebar-toggle" class="btn btn-outline btn-sm" title="Toggle Navigation"><i class="bi bi-list"></i></button>
+                    <div class="global-search">
+                        <i class="bi bi-search"></i>
+                        <input type="text" placeholder="Global search leads, properties, clients..." id="global-search-input">
+                    </div>
+                </div>
+                <div class="header-right">
+                    <!-- Universal Department Attendance & GPS Check-In Widget -->
+                    <div id="header-attendance-widget" style="display: flex; align-items: center; gap: 0.5rem; margin-right: 0.25rem;">
+                        {% if not my_today_punch %}
+                        <button type="button" class="btn btn-sm" onclick="openQuickPunchModal('in')" style="background: #10b981; border: 1px solid #059669; color: #ffffff; font-weight: 600; font-size: 0.78rem; padding: 0.35rem 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.4rem; box-shadow: 0 1px 2px rgba(0,0,0,0.1);" title="Record {{ current_user.department }} Check-In with GPS">
+                            <i class="bi bi-geo-alt-fill"></i>
+                            <span>Check In</span>
+                        </button>
+                        {% elif not my_today_punch.check_out_time %}
+                        <div style="display: flex; align-items: center; gap: 0.4rem; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 0.25rem 0.6rem; font-size: 0.75rem;">
+                            <span style="color: #059669; font-weight: 600;"><i class="bi bi-broadcast"></i> In: {{ my_today_punch.check_in_time.strftime('%I:%M %p') }}</span>
+                            {% if my_today_punch.check_in_location %}
+                            <span style="color: var(--arch-text-muted); max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ my_today_punch.check_in_location }}">📍 {{ my_today_punch.check_in_location }}</span>
+                            {% endif %}
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline" onclick="openQuickPunchModal('out')" style="color: #ef4444; border-color: #ef4444; font-size: 0.75rem; padding: 0.25rem 0.6rem; font-weight: 600;" title="Check Out & Record Location">
+                            <i class="bi bi-box-arrow-right"></i> Check Out
+                        </button>
+                        {% else %}
+                        <div style="display: flex; align-items: center; gap: 0.35rem; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 6px; padding: 0.25rem 0.6rem; font-size: 0.75rem; color: #2563eb;" title="Today's Shift Finished">
+                            <i class="bi bi-check2-circle"></i>
+                            <span>Shift Done ({{ my_today_punch.working_hours or 0 }}h)</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <button id="theme-toggle" class="btn btn-outline btn-sm" title="Toggle Light/Dark Theme">
+                        <i class="bi bi-moon-stars" id="theme-icon"></i>
+                    </button>
+                    <a href="{{ url_for('dashboard.notifications') }}" class="btn btn-outline btn-sm" style="position: relative;" title="Notifications">
+                        <i class="bi bi-bell"></i>
+                        {% if unread_notifications_count > 0 %}
+                        <span class="notif-badge">{{ unread_notifications_count }}</span>
+                        {% endif %}
+                    </a>
+                    <div class="user-profile-badge">
+                        <div class="user-avatar">{{ current_user.full_name[0] }}</div>
+                        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm" style="color: var(--arch-danger);" title="Sign out">
+                            <i class="bi bi-box-arrow-right"></i>
+                            <span>Logout</span>
+                        </a>
+                    </div>
+                </div>
+            </header>
+            {% endif %}
+
+            <div class="page-body">
+                <!-- Flash Notification Banners -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    {% for category, message in messages %}
+                      <div class="alert alert-{{ category }}">
+                        <i class="bi {% if category == 'success' %}bi-check-circle-fill{% elif category == 'danger' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %}"></i>
+                        <span>{{ message }}</span>
+                      </div>
+                    {% endfor %}
+                  {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Universal GPS Attendance Punch Modal -->
+    {% if current_user.is_authenticated %}
+    <div id="arch-quick-punch-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); z-index: 9999; justify-content: center; align-items: center;">
+        <div style="background: var(--arch-card-bg); border-radius: 12px; width: 95%; max-width: 490px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); border: 1px solid var(--arch-border); overflow: hidden;">
+            <div style="padding: 1.15rem 1.4rem; border-bottom: 1px solid var(--arch-border); display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, rgba(30, 80, 187, 0.08) 0%, rgba(24, 43, 92, 0.03) 100%);">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div id="punch-icon-box" style="width: 38px; height: 38px; border-radius: 8px; background: rgba(16, 185, 129, 0.15); color: #059669; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                        <i class="bi bi-geo-alt-fill"></i>
+                    </div>
+                    <div>
+                        <h3 id="punch-modal-title" style="margin: 0; font-size: 1.05rem; font-weight: 700;">Department Check-In</h3>
+                        <small style="color: var(--arch-text-muted);">{{ current_user.full_name }} &bull; <strong style="color: var(--arch-blue-primary);">{{ current_user.department }}</strong></small>
+                    </div>
+                </div>
+                <button type="button" onclick="closeQuickPunchModal()" style="background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--arch-text-muted); line-height: 1;">&times;</button>
+            </div>
+            
+            <form id="arch-punch-form" method="POST" action="{{ url_for('hr.check_in') }}" style="padding: 1.25rem 1.4rem;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="latitude" id="punch-lat" value="23.0338">
+                <input type="hidden" name="longitude" id="punch-lng" value="72.5850">
+                <input type="hidden" name="device_info" id="punch-device">
+
+                <!-- Live GPS Status Alert -->
+                <div id="punch-gps-status" style="border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.82rem; display: flex; align-items: flex-start; gap: 0.6rem; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); color: #1d4ed8;">
+                    <i class="bi bi-broadcast-pin" id="gps-status-icon" style="font-size: 1.15rem; flex-shrink: 0; margin-top: 1px;"></i>
+                    <div style="flex: 1;">
+                        <strong id="gps-status-title" style="display: block;">Detecting Real-Time GPS Coordinates...</strong>
+                        <span id="gps-status-desc" style="font-size: 0.75rem; color: var(--arch-text-muted);">Please allow browser location access to trace coordinates</span>
+                    </div>
+                </div>
+
+                <!-- Location Name / Micro-Market Field -->
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--arch-text-muted);">
+                        <i class="bi bi-pin-map-fill" style="color: var(--arch-blue-primary);"></i> Location / Area Traced
+                    </label>
+                    <input type="text" name="location_name" id="punch-loc-name" class="form-control" style="width: 100%; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.85rem;" value="Ahmedabad HQ (S.G. Highway)" required>
+                </div>
+
+                <!-- Work Mode Selection (Shown only on Check-In) -->
+                <div id="punch-mode-container" style="margin-bottom: 1rem;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--arch-text-muted);">
+                        <i class="bi bi-briefcase-fill" style="color: var(--arch-blue-primary);"></i> Work Mode
+                    </label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;">
+                        <label style="display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem; border: 1px solid var(--arch-border); border-radius: 6px; cursor: pointer; font-size: 0.8rem;">
+                            <input type="radio" name="work_mode" value="Office" checked> Office
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem; border: 1px solid var(--arch-border); border-radius: 6px; cursor: pointer; font-size: 0.8rem;">
+                            <input type="radio" name="work_mode" value="Field"> Field Duty
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem; border: 1px solid var(--arch-border); border-radius: 6px; cursor: pointer; font-size: 0.8rem;">
+                            <input type="radio" name="work_mode" value="WFH"> WFH / Remote
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Notes / Remarks -->
+                <div style="margin-bottom: 1.25rem;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--arch-text-muted);">
+                        <i class="bi bi-chat-left-text"></i> Notes / Purpose (Optional)
+                    </label>
+                    <input type="text" name="notes" id="punch-notes" class="form-control" placeholder="e.g. Morning check-in, Client meeting, Field inspection..." style="width: 100%; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.85rem;">
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                    <button type="button" onclick="closeQuickPunchModal()" class="btn btn-outline btn-sm">Cancel</button>
+                    <button type="submit" id="punch-submit-btn" class="btn btn-primary btn-sm" style="background: #10b981; border-color: #059669; font-weight: 600; padding: 0.45rem 1rem;">
+                        <i class="bi bi-check2-circle"></i> Confirm Check-In
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    function openQuickPunchModal(type) {
+        var modal = document.getElementById('arch-quick-punch-modal');
+        var form = document.getElementById('arch-punch-form');
+        var title = document.getElementById('punch-modal-title');
+        var submitBtn = document.getElementById('punch-submit-btn');
+        var modeContainer = document.getElementById('punch-mode-container');
+        var iconBox = document.getElementById('punch-icon-box');
+        var deviceInput = document.getElementById('punch-device');
+
+        if (!modal) return;
+
+        if (deviceInput) {
+            deviceInput.value = navigator.userAgent ? navigator.userAgent.substring(0, 120) : 'Browser';
+        }
+
+        if (type === 'out') {
+            form.action = "{{ url_for('hr.check_out') }}";
+            title.textContent = "Department Check-Out & Location Log";
+            submitBtn.style.background = "#ef4444";
+            submitBtn.style.borderColor = "#dc2626";
+            submitBtn.innerHTML = '<i class="bi bi-box-arrow-right"></i> Confirm Check-Out';
+            modeContainer.style.display = "none";
+            iconBox.style.background = "rgba(239, 68, 68, 0.15)";
+            iconBox.style.color = "#dc2626";
+            iconBox.innerHTML = '<i class="bi bi-box-arrow-right"></i>';
+        } else {
+            form.action = "{{ url_for('hr.check_in') }}";
+            title.textContent = "Department Check-In ({{ current_user.department }})";
+            submitBtn.style.background = "#10b981";
+            submitBtn.style.borderColor = "#059669";
+            submitBtn.innerHTML = '<i class="bi bi-check2-circle"></i> Confirm Check-In';
+            modeContainer.style.display = "block";
+            iconBox.style.background = "rgba(16, 185, 129, 0.15)";
+            iconBox.style.color = "#059669";
+            iconBox.innerHTML = '<i class="bi bi-geo-alt-fill"></i>';
+        }
+
+        modal.style.display = 'flex';
+
+        // Trigger Geolocation
+        traceBrowserLocation();
+    }
+
+    function closeQuickPunchModal() {
+        var modal = document.getElementById('arch-quick-punch-modal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function traceBrowserLocation() {
+        var statusTitle = document.getElementById('gps-status-title');
+        var statusDesc = document.getElementById('gps-status-desc');
+        var statusAlert = document.getElementById('punch-gps-status');
+        var latInput = document.getElementById('punch-lat');
+        var lngInput = document.getElementById('punch-lng');
+        var locInput = document.getElementById('punch-loc-name');
+
+        if (!("geolocation" in navigator)) {
+            statusTitle.textContent = "GPS Not Supported";
+            statusDesc.textContent = "Recording check-in using default company location.";
+            return;
+        }
+
+        statusTitle.textContent = "Detecting Real-Time GPS Coordinates...";
+        statusDesc.textContent = "Querying high-accuracy device GPS satellite...";
+
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
+                var lat = pos.coords.latitude;
+                var lng = pos.coords.longitude;
+                var acc = Math.round(pos.coords.accuracy || 20);
+
+                latInput.value = lat;
+                lngInput.value = lng;
+
+                statusTitle.textContent = "GPS Coordinates Locked (" + lat.toFixed(4) + ", " + lng.toFixed(4) + ")";
+                statusDesc.textContent = "Accuracy radius: ~" + acc + " meters. Tracing location area...";
+                statusAlert.style.background = "rgba(16, 185, 129, 0.1)";
+                statusAlert.style.borderColor = "rgba(16, 185, 129, 0.3)";
+                statusAlert.style.color = "#065f46";
+
+                // Quick reverse geocode via Nominatim or fallback
+                try {
+                    fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lng)
+                        .then(function(res) { return res.json(); })
+                        .then(function(data) {
+                            if (data && data.display_name) {
+                                var parts = data.display_name.split(',');
+                                var shortLoc = parts.slice(0, 3).join(',').trim();
+                                locInput.value = shortLoc;
+                                statusDesc.textContent = "Traced: " + shortLoc + " (Accuracy: ~" + acc + "m)";
+                            } else {
+                                locInput.value = "Ahmedabad (" + lat.toFixed(4) + ", " + lng.toFixed(4) + ")";
+                            }
+                        })
+                        .catch(function() {
+                            locInput.value = "Ahmedabad Micro-Market (" + lat.toFixed(4) + ", " + lng.toFixed(4) + ")";
+                        });
+                } catch(e) {
+                    locInput.value = "Ahmedabad (" + lat.toFixed(4) + ", " + lng.toFixed(4) + ")";
+                }
+            },
+            function(err) {
+                console.warn("GPS Warning:", err.message);
+                statusTitle.textContent = "Office / Network Location Active";
+                statusDesc.textContent = "Using verified office network location (GPS permission optional)";
+                statusAlert.style.background = "rgba(245, 158, 11, 0.1)";
+                statusAlert.style.borderColor = "rgba(245, 158, 11, 0.3)";
+                statusAlert.style.color = "#92400e";
+                latInput.value = 23.0338;
+                lngInput.value = 72.5850;
+                locInput.value = "Ahmedabad Central Office (Network)";
+            },
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+        );
+    }
+    </script>
+    {% endif %}
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

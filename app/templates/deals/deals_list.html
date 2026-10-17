@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Deals Pipeline - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Deals & Negotiations</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Transaction pipeline from initial discussion to registry & closure</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{{ url_for('deals.index', view='kanban') }}" class="btn {% if view_mode == 'kanban' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">Kanban View</a>
+        <a href="{{ url_for('deals.index', view='table') }}" class="btn {% if view_mode == 'table' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">Table View</a>
+        <a href="{{ url_for('deals.create_deal') }}" class="btn btn-primary btn-sm">+ Create Deal</a>
+    </div>
+</div>
+
+{% if view_mode == 'kanban' %}
+<!-- Kanban View -->
+<div class="kanban-board">
+    {% for stage_name in stages %}
+    <div class="kanban-column">
+        <div class="kanban-column-header">
+            <span>{{ stage_name }}</span>
+            <span class="badge badge-secondary">{{ kanban_columns[stage_name] | length }}</span>
+        </div>
+        <div class="kanban-cards">
+            {% for d in kanban_columns[stage_name] %}
+            <div class="kanban-card">
+                <div style="font-size: 0.75rem; color: var(--arch-text-muted); margin-bottom: 0.25rem;">
+                    {{ d.deal_code }}
+                </div>
+                <a href="{{ url_for('deals.detail', deal_id=d.id) }}" style="text-decoration: none; color: var(--arch-text-main);">
+                    <strong style="font-size: 0.9rem;">{{ d.title }}</strong>
+                </a>
+                <div style="font-size: 0.8rem; color: var(--arch-text-muted); margin: 0.35rem 0;">
+                    Client: <strong>{{ d.client.name }}</strong><br>
+                    Prop: {{ d.property.locality }}
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; border-top: 1px solid var(--arch-border); padding-top: 0.5rem;">
+                    <strong style="color: var(--arch-blue-primary); font-size: 0.85rem;">{{ (d.final_value or d.expected_value) | inr }}</strong>
+                    <a href="{{ url_for('deals.detail', deal_id=d.id) }}" class="btn btn-outline btn-sm" style="padding: 2px 6px; font-size: 11px;"><i class="bi bi-arrow-right"></i></a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<!-- Table View -->
+<div class="card" style="padding: 0;">
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Deal Code</th>
+                    <th>Title</th>
+                    <th>Client</th>
+                    <th>Property</th>
+                    <th>Stage</th>
+                    <th>Value</th>
+                    <th>Owner</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in deals %}
+                <tr>
+                    <td><a href="{{ url_for('deals.detail', deal_id=d.id) }}"><strong>{{ d.deal_code }}</strong></a></td>
+                    <td>{{ d.title }}</td>
+                    <td>{{ d.client.name }}</td>
+                    <td>{{ d.property.title }}</td>
+                    <td><span class="badge badge-info">{{ d.stage }}</span></td>
+                    <td><strong>{{ (d.final_value or d.expected_value) | inr }}</strong></td>
+                    <td>{{ d.owner_user.full_name }}</td>
+                    <td><a href="{{ url_for('deals.detail', deal_id=d.id) }}" class="btn btn-outline btn-sm">Manage</a></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" style="text-align: center; padding: 2rem; color: var(--arch-text-muted);">No deals active.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

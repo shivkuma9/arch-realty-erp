@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h2 class="card-title">{{ title }}</h2>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.full_name.label.text }} *</label>
+                {{ form.full_name(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.company_name.label.text }}</label>
+                {{ form.company_name(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.phone.label.text }} *</label>
+                {{ form.phone(class="form-control", placeholder="+91 98765 43210") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.email.label.text }}</label>
+                {{ form.email(class="form-control", placeholder="client@example.com") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div class="form-group">
+                <label class="form-label">{{ form.source.label.text }}</label>
+                {{ form.source(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.property_category.label.text }}</label>
+                {{ form.property_category(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.transaction_type.label.text }}</label>
+                {{ form.transaction_type(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">{{ form.preferred_locations.label.text }}</label>
+            {{ form.preferred_locations(class="form-control", placeholder="e.g. SG Highway, Prahlad Nagar, Bodakdev, Sindhu Bhavan Road") }}
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.budget_min.label.text }}</label>
+                {{ form.budget_min(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.budget_max.label.text }}</label>
+                {{ form.budget_max(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.area_min_sqft.label.text }}</label>
+                {{ form.area_min_sqft(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.area_max_sqft.label.text }}</label>
+                {{ form.area_max_sqft(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div class="form-group">
+                <label class="form-label">{{ form.priority.label.text }}</label>
+                {{ form.priority(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.status.label.text }}</label>
+                {{ form.status(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.assigned_to_id.label.text }}</label>
+                {{ form.assigned_to_id(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">{{ form.notes.label.text }}</label>
+            {{ form.notes(class="form-control", rows=4) }}
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary">Save Lead Record</button>
+            <a href="{{ url_for('crm.leads_list') }}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

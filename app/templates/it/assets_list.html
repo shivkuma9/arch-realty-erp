@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}IT Assets & Hardware Inventory - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Real Estate IT & Field Equipment Inventory</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Field survey laser meters, 360° virtual tour cameras, client presentation tablets, agent laptops, and title deed vault storage</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{{ url_for('it.index') }}" class="btn btn-outline btn-sm"><i class="bi bi-arrow-left"></i> IT Command Center</a>
+        <a href="{{ url_for('it.create_asset') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Register New Asset</a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="padding: 1rem; margin-bottom: 1.25rem;">
+    <form method="GET" style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+        <select name="category" class="form-control" style="width: 220px;">
+            <option value="">All Categories</option>
+            {% for c in ['Field Survey (Laser Disto Meter)', 'Field Survey (360° Tour Camera / Drone)', 'Mobile & Tablet (Client Presentation)', 'Agent Laptop / Workstation', 'Office Network & Title Deeds Vault', 'Peripherals & Floorplan Plotters'] %}
+            <option value="{{ c }}" {% if category_filter == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="status" class="form-control" style="width: 160px;">
+            <option value="">All Statuses</option>
+            {% for s in ['Available', 'Allocated', 'Under Maintenance', 'Scrapped'] %}
+            <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit" class="btn btn-outline btn-sm"><i class="bi bi-funnel"></i> Apply Filter</button>
+        {% if category_filter or status_filter %}
+        <a href="{{ url_for('it.assets_list') }}" class="btn btn-outline btn-sm" style="color: var(--arch-text-muted);">Reset</a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Assets Table -->
+<div class="card" style="padding: 0;">
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Asset Tag</th>
+                    <th>Asset Name & Model</th>
+                    <th>Category</th>
+                    <th>Serial Number</th>
+                    <th>Assigned To</th>
+                    <th>Allocation Date</th>
+                    <th>Value (INR)</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in assets %}
+                <tr>
+                    <td><strong>{{ a.asset_code }}</strong></td>
+                    <td>
+                        <strong style="color: var(--arch-blue-primary);">{{ a.asset_name }}</strong>
+                        {% if a.notes %}<br><small style="color: var(--arch-text-muted);">{{ a.notes }}</small>{% endif %}
+                    </td>
+                    <td><span class="badge badge-info">{{ a.category }}</span></td>
+                    <td><code>{{ a.serial_number or 'N/A' }}</code></td>
+                    <td>
+                        {% if a.allocated_to %}
+                            <strong>{{ a.allocated_to.full_name }}</strong><br>
+                            <small style="color: var(--arch-text-muted);">{{ a.allocated_to.role }}</small>
+                        {% else %}
+                            <span style="color: var(--arch-text-muted);">In IT Storage</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ a.allocation_date.strftime('%d %b %Y') if a.allocation_date else '-' }}</td>
+                    <td><strong>{{ a.purchase_cost | inr }}</strong></td>
+                    <td>
+                        <span class="badge {% if a.status == 'Allocated' %}badge-success{% elif a.status == 'Available' %}badge-primary{% elif a.status == 'Under Maintenance' %}badge-warning{% else %}badge-danger{% endif %}">
+                            {{ a.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" style="text-align: center; color: var(--arch-text-muted); padding: 3rem;">No IT assets found. Click "+ Register New Asset" above.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

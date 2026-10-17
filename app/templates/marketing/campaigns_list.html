@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}All Ad Campaigns - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Digital Marketing Ad Campaigns</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Google Ads, Meta Instagram/FB, 99acres, Magicbricks and LinkedIn paid campaigns</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{{ url_for('marketing.index') }}" class="btn btn-outline btn-sm"><i class="bi bi-arrow-left"></i> Dashboard</a>
+        <a href="{{ url_for('marketing.create_campaign') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Launch Campaign</a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="padding: 1rem; margin-bottom: 1.25rem;">
+    <form method="GET" style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+        <select name="status" class="form-control" style="width: 160px;">
+            <option value="">All Statuses</option>
+            {% for s in ['Active', 'Scheduled', 'Paused', 'Completed'] %}
+            <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="platform" class="form-control" style="width: 180px;">
+            <option value="">All Platforms</option>
+            {% for p in ['Google Ads', 'Meta (Instagram/FB)', '99acres', 'Magicbricks', 'LinkedIn Ads', 'WhatsApp'] %}
+            <option value="{{ p }}" {% if platform_filter == p %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit" class="btn btn-outline btn-sm"><i class="bi bi-funnel"></i> Apply Filter</button>
+        {% if status_filter or platform_filter %}
+        <a href="{{ url_for('marketing.campaigns_list') }}" class="btn btn-outline btn-sm" style="color: var(--arch-text-muted);">Reset</a>
+        {% endif %}
+    </form>
+</div>
+
+<div class="card" style="padding: 0;">
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Campaign Code</th>
+                    <th>Name & Audience</th>
+                    <th>Platform</th>
+                    <th>Budget</th>
+                    <th>Spent Amount</th>
+                    <th>Impressions</th>
+                    <th>Clicks (CTR)</th>
+                    <th>Leads (CPL)</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in campaigns %}
+                <tr>
+                    <td><strong>{{ c.campaign_code }}</strong></td>
+                    <td>
+                        <strong style="color: var(--arch-blue-primary);">{{ c.name }}</strong><br>
+                        <small style="color: var(--arch-text-muted);"><i class="bi bi-people"></i> {{ c.target_audience or 'General Ahmedabad Real Estate' }}</small>
+                    </td>
+                    <td>
+                        <span class="badge {% if 'Google' in c.platform %}badge-primary{% elif 'Meta' in c.platform %}badge-info{% elif '99acres' in c.platform or 'Magicbricks' in c.platform %}badge-warning{% else %}badge-secondary{% endif %}">
+                            {{ c.platform }}
+                        </span>
+                    </td>
+                    <td>{{ c.budget | inr }}</td>
+                    <td><strong>{{ c.spent_amount | inr }}</strong></td>
+                    <td>{{ "{:,}".format(c.impressions) }}</td>
+                    <td>
+                        {{ "{:,}".format(c.clicks) }}<br>
+                        <small style="color: var(--arch-text-muted);">{{ c.click_through_rate }}% CTR</small>
+                    </td>
+                    <td>
+                        <strong style="color: var(--arch-success);">{{ c.leads_generated }} Leads</strong><br>
+                        <small style="color: var(--arch-text-muted);">₹ {{ c.cost_per_lead | round(1) }}/lead</small>
+                    </td>
+                    <td>
+                        <span class="badge {% if c.status == 'Active' %}badge-success{% elif c.status == 'Paused' %}badge-warning{% else %}badge-secondary{% endif %}">
+                            {{ c.status }}
+                        </span>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 0.35rem;">
+                            <a href="{{ url_for('marketing.edit_campaign', campaign_id=c.id) }}" class="btn btn-outline btn-sm" title="Edit Campaign"><i class="bi bi-pencil-square"></i></a>
+                            <form method="POST" action="{{ url_for('marketing.toggle_status', campaign_id=c.id) }}" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-outline btn-sm" title="Toggle Status">
+                                    {% if c.status == 'Active' %}<i class="bi bi-pause-fill" style="color: var(--arch-warning);"></i>{% else %}<i class="bi bi-play-fill" style="color: var(--arch-success);"></i>{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="10" style="text-align: center; color: var(--arch-text-muted); padding: 3rem;">No campaigns found matching filter.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

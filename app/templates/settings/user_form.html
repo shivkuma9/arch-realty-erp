@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Create User - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+    <h2 class="card-title">Create System User Account</h2>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            <label class="form-label">{{ form.full_name.label.text }} *</label>
+            {{ form.full_name(class="form-control") }}
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.username.label.text }} *</label>
+                {{ form.username(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.email.label.text }} *</label>
+                {{ form.email(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.role.label.text }} *</label>
+                {{ form.role(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.password.label.text }}</label>
+                {{ form.password(class="form-control", placeholder="Defaults to arch1234") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.department.label.text }}</label>
+                {{ form.department(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.designation.label.text }}</label>
+                {{ form.designation(class="form-control") }}
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary">Create User</button>
+            <a href="{{ url_for('settings.index') }}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

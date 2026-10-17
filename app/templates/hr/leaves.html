@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Leave Requests & Approvals - ARCH Realty HRMS{% endblock %}
+
+{% block content %}
+<div class="workspace-header">
+  <div class="workspace-title">
+    <h1><i class="bi bi-calendar2-check-fill" style="color: #F59E0B;"></i> Leave Requests & Approvals</h1>
+    <p>Sanction employee leave requests, inspect department balances and historical attendance absences</p>
+  </div>
+  <div class="btn-group-custom">
+    <a href="{{ url_for('hr.hr_dashboard') }}" class="btn-secondary-hr"><i class="bi bi-speedometer2"></i> Command Center</a>
+    <a href="{{ url_for('hr.attendance') }}" class="btn-secondary-hr"><i class="bi bi-clock-history"></i> My Attendance Log</a>
+    <a href="{{ url_for('hr.request_leave') }}" class="btn-primary-hr"><i class="bi bi-plus-circle"></i> Apply for Leave</a>
+  </div>
+</div>
+
+<!-- Pending Approvals Section -->
+<div class="card-container">
+  <div class="card-header-hr">
+    <h3><i class="bi bi-exclamation-circle-fill" style="color: #F59E0B;"></i> Pending Leave Applications ({{ pending_leaves|length }})</h3>
+    <span class="badge-hr badge-pending">Requires Approval</span>
+  </div>
+  <table class="hr-table">
+    <thead>
+      <tr>
+        <th>Employee</th>
+        <th>Leave Type</th>
+        <th>Dates</th>
+        <th>Total Days</th>
+        <th>Reason</th>
+        <th>Applied On</th>
+        <th style="text-align: right;">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for leave in pending_leaves %}
+      {% set days = (leave.end_date - leave.start_date).days + 1 %}
+      <tr>
+        <td>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="avatar-hr">{{ leave.user.full_name[0] }}</div>
+            <div>
+              <a href="{{ url_for('hr.employee_profile', user_id=leave.user.id) }}" style="font-weight: 600; color: var(--text-primary); text-decoration: none;">
+                {{ leave.user.full_name }}
+              </a>
+              <div style="font-size: 10px; color: var(--text-secondary);">{{ leave.user.department }}</div>
+            </div>
+          </div>
+        </td>
+        <td><span class="badge-hr badge-pending">{{ leave.leave_type }}</span></td>
+        <td><b>{{ leave.start_date.strftime('%d %b') }} &rarr; {{ leave.end_date.strftime('%d %b %Y') }}</b></td>
+        <td><b>{{ days }} Day{% if days > 1 %}s{% endif %}</b></td>
+        <td style="color: var(--text-secondary); font-size: 11px;">"{{ leave.reason }}"</td>
+        <td>{{ leave.created_at.strftime('%d %b %Y') }}</td>
+        <td style="text-align: right;">
+          <div style="display: flex; gap: 6px; justify-content: flex-end;">
+            <form method="POST" action="{{ url_for('hr.review_leave', leave_id=leave.id) }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="action" value="Approved">
+              <button type="submit" class="btn-success-hr btn-sm-hr">Approve</button>
+            </form>
+            <form method="POST" action="{{ url_for('hr.review_leave', leave_id=leave.id) }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="action" value="Rejected">
+              <button type="submit" class="btn-danger-hr btn-sm-hr">Reject</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 30px;">
+          <i class="bi bi-check-circle" style="color: #166534; font-size: 24px; display: block; margin-bottom: 6px;"></i>
+          No pending leave applications awaiting approval.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Historical Leave Log -->
+<div class="card-container">
+  <div class="card-header-hr">
+    <h3><i class="bi bi-clock-history" style="color: var(--brand-primary);"></i> Company Leave History Log</h3>
+  </div>
+  <table class="hr-table">
+    <thead>
+      <tr>
+        <th>Employee</th>
+        <th>Leave Type</th>
+        <th>Dates</th>
+        <th>Reason</th>
+        <th>Status</th>
+        <th>Sanctioned By</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for l in all_leaves %}
+      <tr>
+        <td><b>{{ l.user.full_name }}</b></td>
+        <td>{{ l.leave_type }}</td>
+        <td>{{ l.start_date.strftime('%d %b %Y') }} &rarr; {{ l.end_date.strftime('%d %b %Y') }}</td>
+        <td style="color: var(--text-secondary); font-size: 11px;">{{ l.reason }}</td>
+        <td>
+          {% if l.status == 'Approved' %}
+            <span class="badge-hr badge-verified"><i class="bi bi-check-circle-fill"></i> Approved</span>
+          {% elif l.status == 'Pending' %}
+            <span class="badge-hr badge-pending"><i class="bi bi-hourglass-split"></i> Pending</span>
+          {% else %}
+            <span class="badge-hr badge-rejected"><i class="bi bi-x-circle-fill"></i> Rejected</span>
+          {% endif %}
+        </td>
+        <td style="color: var(--text-secondary); font-size: 11px;">{{ l.reviewed_by.full_name if l.reviewed_by else '&mdash;' }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 25px;">No historical leave applications recorded.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

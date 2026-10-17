@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 750px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <div>
+            <h2 class="card-title" style="margin: 0;">{{ title }}</h2>
+            <p style="color: var(--arch-gray-600); font-size: 0.85rem; margin-top: 0.25rem;">
+                Register company-owned hardware, site measuring devices, or property keys.
+            </p>
+        </div>
+        <span class="badge badge-info">Asset Registry</span>
+    </div>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.asset_code.label.text }} *</label>
+                {{ form.asset_code(class="form-control", placeholder="e.g. AST-LAP-001 or KEY-OFFICE-01") }}
+                {% if form.asset_code.errors %}
+                    <span class="text-danger" style="font-size: 0.8rem;">{{ form.asset_code.errors[0] }}</span>
+                {% endif %}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.asset_name.label.text }} *</label>
+                {{ form.asset_name(class="form-control", placeholder="e.g. Dell Inspiron 15 or Bosch GLM 50C Laser Meter") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.category.label.text }} *</label>
+                {{ form.category(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.serial_number.label.text }}</label>
+                {{ form.serial_number(class="form-control", placeholder="Device Serial No / Key Identification") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.allocated_to_id.label.text }}</label>
+                {{ form.allocated_to_id(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.allocation_date.label.text }}</label>
+                {{ form.allocation_date(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.purchase_date.label.text }}</label>
+                {{ form.purchase_date(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.purchase_cost.label.text }}</label>
+                {{ form.purchase_cost(class="form-control", placeholder="Invoice cost ₹") }}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">{{ form.status.label.text }} *</label>
+            {{ form.status(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">{{ form.notes.label.text }}</label>
+            {{ form.notes(class="form-control", rows=3, placeholder="Condition notes, accessories included, or hand-over signoff...") }}
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary">Save Asset</button>
+            <a href="{{ url_for('hr.assets_list') }}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

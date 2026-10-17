@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Performance Reviews & Appraisals - ARCH Realty HRMS{% endblock %}
+
+{% block content %}
+<div class="workspace-header">
+  <div class="workspace-title">
+    <h1><i class="bi bi-award-fill" style="color: var(--brand-primary);"></i> Performance Reviews & Appraisals</h1>
+    <p>Quarterly KPI scoring, performance evaluations, manager achievements & feedback</p>
+  </div>
+  <div class="btn-group-custom">
+    <a href="{{ url_for('hr.hr_dashboard') }}" class="btn-secondary-hr"><i class="bi bi-speedometer2"></i> Command Center</a>
+    <a href="{{ url_for('hr.targets_list') }}" class="btn-secondary-hr"><i class="bi bi-bullseye"></i> Sales Targets</a>
+    <button type="button" class="btn-primary-hr" onclick="openHrModal('newReviewModal')"><i class="bi bi-plus-circle"></i> + Add Appraisal</button>
+  </div>
+</div>
+
+<div class="card-container">
+  <div class="card-header-hr">
+    <h3><i class="bi bi-award" style="color: var(--brand-primary);"></i> Appraisals & Rating Records ({{ reviews|length }})</h3>
+  </div>
+  <table class="hr-table">
+    <thead>
+      <tr>
+        <th>Employee</th>
+        <th>Appraisal Cycle</th>
+        <th>Rating Score</th>
+        <th>Review Status</th>
+        <th>Manager Feedback & Achievements</th>
+        <th>Evaluator</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in reviews %}
+      <tr>
+        <td>
+          <a href="{{ url_for('hr.employee_profile', user_id=r.user.id) }}" style="font-weight: 600; color: var(--brand-primary); text-decoration: none;">
+            {{ r.user.full_name }}
+          </a>
+          <div style="font-size: 10px; color: var(--text-secondary);">{{ r.user.department }} &bull; {{ r.user.role }}</div>
+        </td>
+        <td><b>{{ r.quarter }}</b></td>
+        <td><span class="badge-hr badge-verified" style="font-size: 12px; font-weight: 700;">{{ r.rating }}</span></td>
+        <td>
+          {% if r.status == 'Completed' %}
+            <span class="badge-hr badge-verified"><i class="bi bi-check-circle-fill"></i> Completed</span>
+          {% else %}
+            <span class="badge-hr badge-pending"><i class="bi bi-hourglass-split"></i> In Review</span>
+          {% endif %}
+        </td>
+        <td style="color: var(--text-secondary); font-size: 11px;">{{ r.feedback or 'Review completed.' }}</td>
+        <td><b>{{ r.reviewer.full_name if r.reviewer else 'Management' }}</b></td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">No performance reviews logged yet.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Modal Add Review -->
+<div class="modal-overlay-hr" id="newReviewModal">
+  <div class="modal-body-hr">
+    <form method="POST" action="{{ url_for('hr.create_performance_review') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header-hr">
+        <h4>Record Quarterly Employee Appraisal</h4>
+        <button type="button" class="modal-close-btn" onclick="closeHrModal('newReviewModal')">&times;</button>
+      </div>
+      <div class="modal-content-hr">
+        <div class="form-group-hr">
+          <label>Employee Name</label>
+          <select name="user_id" required>
+            <option value="">-- Select Employee --</option>
+            {% for u in users %}
+            <option value="{{ u.id }}">{{ u.full_name }} ({{ u.department }} - {{ u.role }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group-hr">
+          <label>Appraisal Cycle / Period</label>
+          <input type="text" name="quarter" placeholder="e.g. Q2 2026 Appraisal or Probation Review" required>
+        </div>
+        <div class="form-group-hr">
+          <label>Appraisal Rating</label>
+          <select name="rating" required>
+            <option value="5.0 / 5.0">5.0 / 5.0 - Outstanding (Exceeds All Expectations)</option>
+            <option value="4.8 / 5.0" selected>4.8 / 5.0 - Superior Performer</option>
+            <option value="4.5 / 5.0">4.5 / 5.0 - Exceeds Expectations</option>
+            <option value="4.0 / 5.0">4.0 / 5.0 - Fully Meets Expectations</option>
+            <option value="3.5 / 5.0">3.5 / 5.0 - Meets Minimum Criteria</option>
+            <option value="3.0 / 5.0">3.0 / 5.0 - Needs Improvement</option>
+          </select>
+        </div>
+        <div class="form-group-hr">
+          <label>Manager Commentary & Evaluation</label>
+          <textarea name="feedback" rows="3" placeholder="Performance commentary, lead achievements, core competencies..." required></textarea>
+        </div>
+      </div>
+      <div class="modal-footer-hr">
+        <button type="button" class="btn-secondary-hr" onclick="closeHrModal('newReviewModal')">Cancel</button>
+        <button type="submit" class="btn-primary-hr">Save Appraisal</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

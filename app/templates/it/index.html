@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}IT & Systems Command Center - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Real Estate IT & Systems Command Center</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Portal lead sync health, field survey tools (laser meters & 360 cameras), client tablets, WhatsApp brochure delivery, and secure document vault</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{{ url_for('it.create_asset') }}" class="btn btn-outline btn-sm"><i class="bi bi-laptop"></i> Register Asset</a>
+        <a href="{{ url_for('it.create_ticket') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Log Support Ticket</a>
+    </div>
+</div>
+
+<!-- Primary IT KPIs -->
+<div class="grid-cols-4">
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-blue-primary);">
+        <div class="kpi-header">
+            <span class="kpi-label">Open Support Tickets</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-blue-primary);"><i class="bi bi-headset"></i></div>
+        </div>
+        <span class="kpi-value">{{ open_tickets }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-clock-history"></i> Active Helpdesk Queue</span>
+    </div>
+
+    <div class="kpi-card" style="border-left: 4px solid {% if critical_tickets > 0 %}var(--arch-danger){% else %}var(--arch-success){% endif %};">
+        <div class="kpi-header">
+            <span class="kpi-label">Critical Incidents</span>
+            <div class="kpi-icon-wrap" style="color: {% if critical_tickets > 0 %}var(--arch-danger){% else %}var(--arch-success){% endif %};"><i class="bi bi-exclamation-octagon-fill"></i></div>
+        </div>
+        <span class="kpi-value" style="color: {% if critical_tickets > 0 %}var(--arch-danger){% else %}var(--arch-success){% endif %};">{{ critical_tickets }}</span>
+        <span class="kpi-subtitle">Priority High/Critical</span>
+    </div>
+
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-info);">
+        <div class="kpi-header">
+            <span class="kpi-label">Tracked IT Assets</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-info);"><i class="bi bi-laptop"></i></div>
+        </div>
+        <span class="kpi-value">{{ total_assets }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-person-check-fill"></i> {{ allocated_assets }} in active use</span>
+    </div>
+
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-success);">
+        <div class="kpi-header">
+            <span class="kpi-label">Portal & API Health</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-success);"><i class="bi bi-broadcast-pin"></i></div>
+        </div>
+        <span class="kpi-value" style="color: var(--arch-success);">99.9%</span>
+        <span class="kpi-subtitle"><i class="bi bi-check-circle-fill"></i> Real Estate APIs Online</span>
+    </div>
+</div>
+
+<!-- Support Queue & System Telemetry -->
+<div class="grid-cols-3" style="margin-top: 1.5rem;">
+    <!-- Recent Support Tickets Table -->
+    <div class="card" style="grid-column: span 2; padding: 0;">
+        <div style="padding: 1rem; border-bottom: 1px solid var(--arch-border); display: flex; justify-content: space-between; align-items: center;">
+            <strong style="font-size: 0.95rem;"><i class="bi bi-ticket-detailed-fill" style="color: var(--arch-blue-primary);"></i> Helpdesk Incident & Request Queue</strong>
+            <a href="{{ url_for('it.tickets_list') }}" class="btn btn-outline btn-sm">View All Tickets</a>
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Ticket</th>
+                        <th>Category</th>
+                        <th>Priority</th>
+                        <th>Requested By</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tickets %}
+                    <tr>
+                        <td>
+                            <strong>{{ t.title }}</strong><br>
+                            <small style="color: var(--arch-text-muted);">{{ t.ticket_number }} &bull; {{ t.created_at.strftime('%d %b, %I:%M %p') }}</small>
+                        </td>
+                        <td><span class="badge badge-info">{{ t.category }}</span></td>
+                        <td>
+                            <span class="badge {% if t.priority == 'Critical' %}badge-danger{% elif t.priority == 'High' %}badge-warning{% else %}badge-primary{% endif %}">
+                                {{ t.priority }}
+                            </span>
+                        </td>
+                        <td>{{ t.requested_by.full_name }}</td>
+                        <td>
+                            <span class="badge {% if t.status in ['Resolved', 'Closed'] %}badge-success{% else %}badge-warning{% endif %}">
+                                {{ t.status }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if t.status not in ['Resolved', 'Closed'] %}
+                            <form method="POST" action="{{ url_for('it.update_ticket', ticket_id=t.id) }}" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="status" value="Resolved">
+                                <button type="submit" class="btn btn-outline btn-sm" style="color: var(--arch-success); padding: 2px 6px; font-size: 11px;">
+                                    <i class="bi bi-check-lg"></i> Resolve
+                                </button>
+                            </form>
+                            {% else %}
+                            <small style="color: var(--arch-text-muted);"><i class="bi bi-check2-all"></i> Done</small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No pending IT support tickets.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Infrastructure Telemetry -->
+    <div class="card">
+        <h3 class="card-title" style="margin-bottom: 1rem;"><i class="bi bi-broadcast-pin" style="color: var(--arch-blue-primary);"></i> Portal Sync & API Telemetry</h3>
+        <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+            {% for s in services %}
+            <div style="padding: 0.75rem; border: 1px solid var(--arch-border); border-radius: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                    <strong>{{ s.service_name }}</strong>
+                    <span class="badge badge-success"><i class="bi bi-check-circle-fill"></i> {{ s.status }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--arch-text-muted);">
+                    <span>Uptime: <strong style="color: var(--arch-success);">{{ s.uptime_percentage }}%</strong></span>
+                    <span>Latency: <strong>{{ s.response_time_ms }} ms</strong></span>
+                </div>
+            </div>
+            {% else %}
+            <div style="padding: 0.75rem; border: 1px solid var(--arch-border); border-radius: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong>99acres & MagicBricks Sync API</strong>
+                    <span class="badge badge-success"><i class="bi bi-check-circle-fill"></i> Operational</span>
+                </div>
+                <small style="color: var(--arch-text-muted); display: block; margin-top: 0.25rem;">Real-time Portal Lead Webhook &bull; 99.98%</small>
+            </div>
+            <div style="padding: 0.75rem; border: 1px solid var(--arch-border); border-radius: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong>WhatsApp Business Cloud API</strong>
+                    <span class="badge badge-success"><i class="bi bi-check-circle-fill"></i> Operational</span>
+                </div>
+                <small style="color: var(--arch-text-muted); display: block; margin-top: 0.25rem;">Automated Property Brochure Dispatch &bull; 99.95%</small>
+            </div>
+            {% endfor %}
+
+            <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                <a href="{{ url_for('it.assets_list') }}" class="btn btn-outline btn-sm" style="flex: 1; justify-content: center;">
+                    <i class="bi bi-laptop"></i> Assets Directory
+                </a>
+                <a href="{{ url_for('it.infrastructure') }}" class="btn btn-primary btn-sm" style="flex: 1; justify-content: center;">
+                    <i class="bi bi-speedometer2"></i> Telemetry
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Property Inventory - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Property Inventory</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Commercial, Residential, Industrial & Land listings in Ahmedabad</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{{ url_for('properties.map_view') }}" class="btn btn-outline btn-sm"><i class="bi bi-map"></i> Map View</a>
+        <a href="{{ url_for('properties.create_property') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add Listing</a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="padding: 1rem; margin-bottom: 1.25rem;">
+    <form method="GET" style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <input type="text" name="search" value="{{ search }}" placeholder="Search title, locality, code..." class="form-control" style="width: 220px;">
+        
+        <select name="category" class="form-control" style="width: 150px;">
+            <option value="">All Categories</option>
+            {% for c in ['Commercial', 'Residential', 'Industrial', 'Land', 'Pre-Leased'] %}
+            <option value="{{ c }}" {% if category == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="tx_type" class="form-control" style="width: 140px;">
+            <option value="">All Types</option>
+            <option value="Sale" {% if tx_type == 'Sale' %}selected{% endif %}>For Sale</option>
+            <option value="Rent" {% if tx_type == 'Rent' %}selected{% endif %}>For Rent</option>
+            <option value="Lease" {% if tx_type == 'Lease' %}selected{% endif %}>For Lease</option>
+        </select>
+
+        <select name="status" class="form-control" style="width: 140px;">
+            <option value="Available" {% if status == 'Available' %}selected{% endif %}>Available</option>
+            <option value="Under Offer" {% if status == 'Under Offer' %}selected{% endif %}>Under Offer</option>
+            <option value="Sold" {% if status == 'Sold' %}selected{% endif %}>Sold</option>
+            <option value="Rented" {% if status == 'Rented' %}selected{% endif %}>Rented</option>
+            <option value="All" {% if status == 'All' %}selected{% endif %}>All Statuses</option>
+        </select>
+
+        <button type="submit" class="btn btn-outline btn-sm">Filter</button>
+        <a href="{{ url_for('properties.index') }}" class="btn btn-outline btn-sm" style="color: var(--arch-text-muted);">Reset</a>
+    </form>
+</div>
+
+<!-- Properties Grid -->
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem;">
+    {% for p in pagination.items %}
+    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; padding: 1.25rem; transition: transform 0.2s;">
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; gap: 0.35rem; flex-wrap: wrap;">
+                <div>
+                    <span class="badge badge-primary">{{ p.category }}</span>
+                    {% if p.sub_category %}
+                    <span class="badge badge-secondary">{{ p.sub_category }}</span>
+                    {% endif %}
+                    {% if p.is_pre_leased %}
+                    <span class="badge badge-info" style="background: #0ea5e9; color: white;"><i class="bi bi-patch-check-fill"></i> Pre-Leased</span>
+                    {% endif %}
+                </div>
+                <span class="badge {% if p.availability_status == 'Available' %}badge-success{% else %}badge-warning{% endif %}">{{ p.availability_status }}</span>
+            </div>
+            <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">
+                <a href="{{ url_for('properties.detail', property_id=p.id) }}" style="color: var(--arch-text-main); text-decoration: none;">{{ p.title }}</a>
+            </h3>
+            <p style="font-size: 0.8rem; color: var(--arch-text-muted); margin-bottom: 0.65rem;">
+                <i class="bi bi-geo-alt"></i> {% if p.building_name %}<strong>{{ p.building_name }}</strong>, {% endif %}{{ p.locality }}, {{ p.city }}
+            </p>
+
+            {% if p.is_pre_leased and p.tenant_name %}
+            <div style="background: rgba(14, 165, 233, 0.08); border-left: 3px solid #0ea5e9; padding: 0.45rem 0.65rem; border-radius: 4px; margin-bottom: 0.65rem; font-size: 0.8rem;">
+                <strong>Tenant:</strong> {{ p.tenant_name }}<br>
+                <span>Yield: <strong style="color: var(--arch-success);">{{ p.roi_percentage }}% ROI</strong> | Rent: <strong>{{ p.monthly_rental_income | inr }}/mo</strong></span>
+            </div>
+            {% endif %}
+            
+            <div style="display: flex; justify-content: space-between; background: var(--arch-bg-main); padding: 0.65rem; border-radius: 6px; margin-bottom: 0.75rem;">
+                <div>
+                    <span style="font-size: 0.7rem; color: var(--arch-text-muted); display: block;">AREA</span>
+                    <strong>
+                        {% if p.plot_area_sqyd and p.plot_area_sqyd > 0 %}
+                            {{ p.plot_area_sqyd }} Sq.Yd
+                        {% else %}
+                            {{ p.carpet_area or p.builtup_area }} Sq.Ft
+                        {% endif %}
+                    </strong>
+                </div>
+                <div>
+                    <span style="font-size: 0.7rem; color: var(--arch-text-muted); display: block;">FURNISHING</span>
+                    <strong>{{ p.furnishing or 'Bare Shell' }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--arch-border); padding-top: 0.75rem; margin-top: 0.5rem;">
+                <div>
+                    <span style="font-size: 0.7rem; color: var(--arch-text-muted); display: block;">ASKING {{ p.transaction_type | upper }}</span>
+                    <strong style="font-size: 1.15rem; color: var(--arch-blue-primary);">{{ (p.sale_price if p.transaction_type == 'Sale' else p.rent_price) | inr }}</strong>
+                </div>
+                <a href="{{ url_for('properties.detail', property_id=p.id) }}" class="btn btn-outline btn-sm">Details <i class="bi bi-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div style="grid-column: 1 / -1; text-align: center; padding: 3rem;" class="card">
+        <p style="color: var(--arch-text-muted);">No property listings match your criteria.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

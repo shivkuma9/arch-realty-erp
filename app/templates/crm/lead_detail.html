@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}{{ lead.lead_code }} - {{ lead.full_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <h1 class="page-title">{{ lead.full_name }}</h1>
+            <span class="badge badge-info">{{ lead.status }}</span>
+            <span class="badge badge-secondary">{{ lead.lead_code }}</span>
+        </div>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Created on {{ lead.created_at.strftime('%d %b %Y') }} • Assigned to: {{ lead.assigned_to.full_name if lead.assigned_to else 'Unassigned' }}</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        {% if lead.status != 'Won' %}
+        <form method="POST" action="{{ url_for('crm.lead_convert_to_client', lead_id=lead.id) }}" style="display: inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-primary btn-sm" onclick="return confirm('Convert this lead into an active Client account?');"><i class="bi bi-person-check-fill"></i> Convert to Client</button>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('crm.lead_edit', lead_id=lead.id) }}" class="btn btn-outline btn-sm"><i class="bi bi-pencil-square"></i> Edit Details</a>
+        <form method="POST" action="{{ url_for('crm.lead_archive', lead_id=lead.id) }}" style="display: inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline btn-sm" style="color: var(--arch-danger);" onclick="return confirm('Archive this lead?');"><i class="bi bi-archive"></i> Archive</button>
+        </form>
+    </div>
+</div>
+
+<div class="grid-cols-2">
+    <!-- Lead Details Card -->
+    <div class="card">
+        <h3 class="card-title">Requirement Profile</h3>
+        <table class="arch-table">
+            <tr>
+                <td style="width: 35%; color: var(--arch-text-muted);">Company</td>
+                <td><strong>{{ lead.company_name or 'Individual Client' }}</strong></td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">Phone</td>
+                <td><a href="tel:{{ lead.phone }}">{{ lead.phone }}</a></td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">Email</td>
+                <td>{{ lead.email or 'Not provided' }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">Property Category</td>
+                <td><span class="badge badge-primary">{{ lead.property_category }}</span> ({{ lead.transaction_type }})</td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">Locations</td>
+                <td>{{ lead.preferred_locations or 'Any location in Ahmedabad' }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">Budget Range</td>
+                <td>{{ lead.budget_min | inr }} - {{ lead.budget_max | inr }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">Area Expectation</td>
+                <td>{{ lead.area_min_sqft }} - {{ lead.area_max_sqft }} Sq.Ft</td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">Lead Source</td>
+                <td>{{ lead.source }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">Priority</td>
+                <td><span class="badge badge-warning">{{ lead.priority }}</span></td>
+            </tr>
+        </table>
+        
+        <div style="margin-top: 1rem; padding: 0.75rem; background: var(--arch-bg-main); border-radius: 6px;">
+            <strong style="font-size: 0.8rem; color: var(--arch-text-muted);">Internal Requirement Notes:</strong>
+            <p style="margin-top: 0.35rem; font-size: 0.85rem;">{{ lead.notes or 'No additional notes provided.' }}</p>
+        </div>
+    </div>
+
+    <!-- Right Side: Interactions, Scheduling & Timeline -->
+    <div>
+        <!-- Quick Log Activity -->
+        <div class="card">
+            <h3 class="card-title">Log Call / Interaction</h3>
+            <form method="POST" action="{{ url_for('crm.lead_add_activity', lead_id=lead.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <select name="activity_type" class="form-control" style="width: 130px;">
+                        <option value="Call">Phone Call</option>
+                        <option value="Meeting">Meeting</option>
+                        <option value="WhatsApp">WhatsApp</option>
+                        <option value="Email">Email</option>
+                        <option value="Note">Note</option>
+                    </select>
+                    <input type="text" name="summary" placeholder="Summary (e.g. Discussed budget on SG Highway)" class="form-control" required>
+                </div>
+                <textarea name="details" placeholder="Detailed notes or discussion outcome..." class="form-control" rows="2" style="margin-bottom: 0.5rem;"></textarea>
+                <button type="submit" class="btn btn-primary btn-sm">+ Log Activity</button>
+            </form>
+        </div>
+
+        <!-- Schedule Follow-up -->
+        <div class="card">
+            <h3 class="card-title">Schedule Follow-Up</h3>
+            <form method="POST" action="{{ url_for('crm.lead_schedule_followup', lead_id=lead.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <input type="datetime-local" name="scheduled_at" class="form-control" required>
+                    <select name="type" class="form-control" style="width: 130px;">
+                        <option value="Call">Call</option>
+                        <option value="Meeting">Meeting</option>
+                        <option value="Site Visit">Site Visit</option>
+                    </select>
+                </div>
+                <input type="text" name="notes" placeholder="Follow-up agenda..." class="form-control" style="margin-bottom: 0.5rem;">
+                <button type="submit" class="btn btn-outline btn-sm">Set Follow-Up Reminder</button>
+            </form>
+        </div>
+
+        <!-- Activity Timeline -->
+        <div class="card">
+            <h3 class="card-title">Activity Timeline ({{ activities | length }})</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {% for act in activities %}
+                <div style="border-left: 2px solid var(--arch-blue-primary); padding-left: 0.75rem;">
+                    <span class="badge badge-info">{{ act.activity_type }}</span>
+                    <strong>{{ act.summary }}</strong>
+                    <div style="font-size: 0.75rem; color: var(--arch-text-muted);">By {{ act.user.full_name }} • {{ act.created_at.strftime('%d %b %Y, %I:%M %p') }}</div>
+                    {% if act.details %}
+                    <p style="font-size: 0.8rem; margin-top: 0.25rem;">{{ act.details }}</p>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p style="color: var(--arch-text-muted); font-size: 0.85rem;">No activity recorded yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

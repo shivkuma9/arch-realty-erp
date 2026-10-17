@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 750px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <div>
+            <h2 class="card-title" style="margin: 0;">{{ title }}</h2>
+            <p style="color: var(--arch-gray-600); font-size: 0.85rem; margin-top: 0.25rem;">
+                Add job applicants and coordinate interview rounds across sales, marketing, and operations.
+            </p>
+        </div>
+        <span class="badge badge-info">HR Acquisition</span>
+    </div>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            <label class="form-label">{{ form.candidate_name.label.text }} *</label>
+            {{ form.candidate_name(class="form-control", placeholder="Full Candidate Name") }}
+            {% if form.candidate_name.errors %}
+                <span class="text-danger" style="font-size: 0.8rem;">{{ form.candidate_name.errors[0] }}</span>
+            {% endif %}
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.position.label.text }} *</label>
+                {{ form.position(class="form-control", placeholder="e.g. Business Development Executive (BDE)") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.department.label.text }} *</label>
+                {{ form.department(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.phone.label.text }} *</label>
+                {{ form.phone(class="form-control", placeholder="Primary Mobile Number") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.email.label.text }}</label>
+                {{ form.email(class="form-control", placeholder="candidate@email.com") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.source.label.text }}</label>
+                {{ form.source(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.stage.label.text }}</label>
+                {{ form.stage(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.interview_date.label.text }}</label>
+                {{ form.interview_date(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.hiring_manager_id.label.text }}</label>
+                {{ form.hiring_manager_id(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">{{ form.notes.label.text }}</label>
+            {{ form.notes(class="form-control", rows=3, placeholder="Prior experience, expected CTC, notice period, or interview feedback...") }}
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary">Save Candidate</button>
+            <a href="{{ url_for('hr.recruitment_list') }}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

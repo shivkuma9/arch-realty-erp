@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Site Visits - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Site Visits & Field Operations</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Field visits scheduling, conflict checks, on-site check-ins, and client feedback</p>
+    </div>
+    <a href="{{ url_for('field.schedule_visit') }}" class="btn btn-primary btn-sm">+ Schedule Site Visit</a>
+</div>
+
+<div class="card" style="padding: 0;">
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Visit Code</th>
+                    <th>Date & Time</th>
+                    <th>Property</th>
+                    <th>Client / Prospect</th>
+                    <th>Field Executive</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in visits %}
+                <tr>
+                    <td><strong>{{ v.visit_code }}</strong></td>
+                    <td>{{ v.visit_date }}<br><small>{{ v.visit_time.strftime('%I:%M %p') }}</small></td>
+                    <td><a href="{{ url_for('properties.detail', property_id=v.property.id) }}"><strong>{{ v.property.title }}</strong></a><br><small style="color: var(--arch-text-muted);">{{ v.property.locality }}</small></td>
+                    <td>{{ v.client.name if v.client else (v.lead.full_name if v.lead else 'Direct Walk-in') }}</td>
+                    <td>{{ v.assigned_employee.full_name }}</td>
+                    <td>
+                        <span class="badge {% if v.status == 'Completed' %}badge-success{% elif v.status == 'Scheduled' %}badge-primary{% elif v.status == 'Confirmed' %}badge-info{% else %}badge-warning{% endif %}">
+                            {{ v.status }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if v.status in ['Scheduled', 'Confirmed'] %}
+                        <form method="POST" action="{{ url_for('field.check_in', visit_id=v.id) }}" style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="location" value="Ahmedabad Property Site">
+                            <button type="submit" class="btn btn-outline btn-sm" style="color: var(--arch-success);"><i class="bi bi-geo-alt-fill"></i> Check In</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--arch-text-muted);">No site visits scheduled.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

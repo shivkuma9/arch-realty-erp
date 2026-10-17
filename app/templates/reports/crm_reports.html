@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}CRM & ERP Enterprise Reports - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div>
+        <h1 class="page-title"><i class="bi bi-file-earmark-spreadsheet-fill text-primary"></i> CRM & ERP Enterprise Reports</h1>
+        <p class="page-subtitle text-muted">Comprehensive multi-department operational reports with single-click CSV/Excel export capabilities.</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <a href="{{ url_for('reports.export_report_csv', report_type=tab) }}" class="btn btn-primary">
+            <i class="bi bi-download"></i> Export {{ tab|title }} Report (CSV/Excel)
+        </a>
+    </div>
+</div>
+
+<!-- Report Category Navigation Tabs -->
+<div style="display: flex; gap: 8px; border-bottom: 2px solid var(--arch-border); margin-bottom: 24px; padding-bottom: 4px; overflow-x: auto;">
+    <a href="{{ url_for('reports.crm_reports', tab='inquiry') }}" class="btn btn-sm {% if tab == 'inquiry' %}btn-primary{% else %}btn-outline{% endif %}">
+        <i class="bi bi-funnel"></i> Inquiries (Leads)
+    </a>
+    <a href="{{ url_for('reports.crm_reports', tab='clients') }}" class="btn btn-sm {% if tab == 'clients' %}btn-primary{% else %}btn-outline{% endif %}">
+        <i class="bi bi-people"></i> Clients Directory
+    </a>
+    <a href="{{ url_for('reports.crm_reports', tab='deals') }}" class="btn btn-sm {% if tab == 'deals' %}btn-primary{% else %}btn-outline{% endif %}">
+        <i class="bi bi-briefcase"></i> Deal Pipeline
+    </a>
+    <a href="{{ url_for('reports.crm_reports', tab='broker') }}" class="btn btn-sm {% if tab == 'broker' %}btn-primary{% else %}btn-outline{% endif %}">
+        <i class="bi bi-cash-stack"></i> Brokerage & Commission
+    </a>
+    <a href="{{ url_for('reports.crm_reports', tab='sourcing') }}" class="btn btn-sm {% if tab == 'sourcing' %}btn-primary{% else %}btn-outline{% endif %}">
+        <i class="bi bi-crosshair"></i> Sourcing & Acquisitions
+    </a>
+    <a href="{{ url_for('reports.crm_reports', tab='attendance') }}" class="btn btn-sm {% if tab == 'attendance' %}btn-primary{% else %}btn-outline{% endif %}">
+        <i class="bi bi-clock-history"></i> Attendance & Operations
+    </a>
+    <a href="{{ url_for('reports.export_report_csv', report_type='inventory') }}" class="btn btn-sm btn-outline">
+        <i class="bi bi-building"></i> Export Properties Inventory
+    </a>
+</div>
+
+<!-- Tab Content -->
+<div class="card" style="background: var(--arch-card-bg); border-radius: 8px; border: 1px solid var(--arch-border); padding: 20px;">
+    
+    {% if tab == 'inquiry' %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 1.05rem; font-weight: 600; margin: 0;">Inquiry / Leads Report</h3>
+        <span class="text-muted" style="font-size: 0.85rem;">Showing {{ leads|length }} records</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--arch-border); text-align: left; color: var(--arch-muted); font-size: 0.8rem; text-transform: uppercase;">
+                    <th style="padding: 12px 14px;">Code</th>
+                    <th style="padding: 12px 14px;">Lead Name</th>
+                    <th style="padding: 12px 14px;">Phone</th>
+                    <th style="padding: 12px 14px;">Source</th>
+                    <th style="padding: 12px 14px;">Category</th>
+                    <th style="padding: 12px 14px;">Budget Max</th>
+                    <th style="padding: 12px 14px;">Status</th>
+                    <th style="padding: 12px 14px;">Assigned To</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for l in leads %}
+                <tr style="border-bottom: 1px solid var(--arch-border); font-size: 0.85rem;">
+                    <td style="padding: 12px 14px; font-weight: 600;">{{ l.lead_code }}</td>
+                    <td style="padding: 12px 14px;">{{ l.full_name }}</td>
+                    <td style="padding: 12px 14px;">{{ l.phone }}</td>
+                    <td style="padding: 12px 14px;"><span class="badge" style="background: #e0e7ff; color: #3730a3; padding: 2px 6px;">{{ l.source }}</span></td>
+                    <td style="padding: 12px 14px;">{{ l.property_category }}</td>
+                    <td style="padding: 12px 14px;">₹ {{ '{:,.2f}'.format(l.budget_max) if l.budget_max else '0' }}</td>
+                    <td style="padding: 12px 14px;"><span class="badge" style="background: #dbeafe; color: #1e40af; padding: 2px 6px;">{{ l.status }}</span></td>
+                    <td style="padding: 12px 14px;">{{ l.assigned_to.full_name if l.assigned_to else 'Unassigned' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% elif tab == 'clients' %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 1.05rem; font-weight: 600; margin: 0;">Clients Directory Report</h3>
+        <span class="text-muted" style="font-size: 0.85rem;">Showing {{ clients|length }} clients</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--arch-border); text-align: left; color: var(--arch-muted); font-size: 0.8rem; text-transform: uppercase;">
+                    <th style="padding: 12px 14px;">Client Code</th>
+                    <th style="padding: 12px 14px;">Client Name</th>
+                    <th style="padding: 12px 14px;">Company</th>
+                    <th style="padding: 12px 14px;">Phone</th>
+                    <th style="padding: 12px 14px;">Type</th>
+                    <th style="padding: 12px 14px;">Category</th>
+                    <th style="padding: 12px 14px;">Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in clients %}
+                <tr style="border-bottom: 1px solid var(--arch-border); font-size: 0.85rem;">
+                    <td style="padding: 12px 14px; font-weight: 600;">{{ c.client_code }}</td>
+                    <td style="padding: 12px 14px;">{{ c.name }}</td>
+                    <td style="padding: 12px 14px;">{{ c.company_name or 'Individual' }}</td>
+                    <td style="padding: 12px 14px;">{{ c.phone }}</td>
+                    <td style="padding: 12px 14px;">{{ c.client_type }}</td>
+                    <td style="padding: 12px 14px;"><span class="badge" style="background: #e0e7ff; color: #3730a3; padding: 2px 6px;">{{ c.category }}</span></td>
+                    <td style="padding: 12px 14px; color: var(--arch-muted);">{{ c.created_at.strftime('%d %b %Y') if c.created_at else '' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% elif tab == 'deals' %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 1.05rem; font-weight: 600; margin: 0;">Deal Pipeline Report</h3>
+        <span class="text-muted" style="font-size: 0.85rem;">Showing {{ deals|length }} deals</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--arch-border); text-align: left; color: var(--arch-muted); font-size: 0.8rem; text-transform: uppercase;">
+                    <th style="padding: 12px 14px;">Deal Code</th>
+                    <th style="padding: 12px 14px;">Client</th>
+                    <th style="padding: 12px 14px;">Property</th>
+                    <th style="padding: 12px 14px;">Stage</th>
+                    <th style="padding: 12px 14px;">Value</th>
+                    <th style="padding: 12px 14px;">Target Closing</th>
+                    <th style="padding: 12px 14px;">Owner</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in deals %}
+                <tr style="border-bottom: 1px solid var(--arch-border); font-size: 0.85rem;">
+                    <td style="padding: 12px 14px; font-weight: 600;">{{ d.deal_code }}</td>
+                    <td style="padding: 12px 14px;">{{ d.client.name if d.client else 'N/A' }}</td>
+                    <td style="padding: 12px 14px;">{{ d.property.title if d.property else 'N/A' }}</td>
+                    <td style="padding: 12px 14px;"><span class="badge" style="background: #ede9fe; color: #5b21b6; padding: 2px 6px;">{{ d.stage }}</span></td>
+                    <td style="padding: 12px 14px; font-weight: 600; color: #059669;">₹ {{ '{:,.2f}'.format(d.final_value or d.expected_value or 0) }}</td>
+                    <td style="padding: 12px 14px;">{{ d.expected_closing_date.strftime('%d %b %Y') if d.expected_closing_date else 'TBD' }}</td>
+                    <td style="padding: 12px 14px;">{{ d.owner.full_name if d.owner else 'Unassigned' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% elif tab == 'broker' %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 1.05rem; font-weight: 600; margin: 0;">Brokerage & Receivables Report</h3>
+        <span class="text-muted" style="font-size: 0.85rem;">Showing {{ brokerages|length }} transactions</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--arch-border); text-align: left; color: var(--arch-muted); font-size: 0.8rem; text-transform: uppercase;">
+                    <th style="padding: 12px 14px;">Deal Code</th>
+                    <th style="padding: 12px 14px;">Client</th>
+                    <th style="padding: 12px 14px;">Property</th>
+                    <th style="padding: 12px 14px;">Expected</th>
+                    <th style="padding: 12px 14px;">Received</th>
+                    <th style="padding: 12px 14px;">Outstanding</th>
+                    <th style="padding: 12px 14px;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in brokerages %}
+                <tr style="border-bottom: 1px solid var(--arch-border); font-size: 0.85rem;">
+                    <td style="padding: 12px 14px; font-weight: 600;">{{ b.deal.deal_code if b.deal else 'N/A' }}</td>
+                    <td style="padding: 12px 14px;">{{ b.deal.client.name if b.deal and b.deal.client else 'N/A' }}</td>
+                    <td style="padding: 12px 14px;">{{ b.deal.property.title if b.deal and b.deal.property else 'N/A' }}</td>
+                    <td style="padding: 12px 14px;">₹ {{ '{:,.2f}'.format(b.expected_amount) }}</td>
+                    <td style="padding: 12px 14px; color: #059669; font-weight: 600;">₹ {{ '{:,.2f}'.format(b.received_amount) }}</td>
+                    <td style="padding: 12px 14px; color: #dc2626; font-weight: 600;">₹ {{ '{:,.2f}'.format(b.outstanding_amount) }}</td>
+                    <td style="padding: 12px 14px;"><span class="badge" style="background: #e0e7ff; color: #3730a3; padding: 2px 6px;">{{ b.status }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% elif tab == 'sourcing' %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 1.05rem; font-weight: 600; margin: 0;">Sourcing Assignments Report</h3>
+        <span class="text-muted" style="font-size: 0.85rem;">Showing {{ sourcing_items|length }} assignments</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--arch-border); text-align: left; color: var(--arch-muted); font-size: 0.8rem; text-transform: uppercase;">
+                    <th style="padding: 12px 14px;">Sourcing Code</th>
+                    <th style="padding: 12px 14px;">Title</th>
+                    <th style="padding: 12px 14px;">Type</th>
+                    <th style="padding: 12px 14px;">Locality</th>
+                    <th style="padding: 12px 14px;">Priority</th>
+                    <th style="padding: 12px 14px;">Status</th>
+                    <th style="padding: 12px 14px;">Assigned To</th>
+                    <th style="padding: 12px 14px;">Due Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in sourcing_items %}
+                <tr style="border-bottom: 1px solid var(--arch-border); font-size: 0.85rem;">
+                    <td style="padding: 12px 14px; font-weight: 600;">{{ a.sourcing_code }}</td>
+                    <td style="padding: 12px 14px;">{{ a.title }}</td>
+                    <td style="padding: 12px 14px;"><span class="badge" style="background: #e0e7ff; color: #3730a3; padding: 2px 6px;">{{ a.sourcing_type }}</span></td>
+                    <td style="padding: 12px 14px;">{{ a.locality }}</td>
+                    <td style="padding: 12px 14px;"><span class="badge" style="background: #fef3c7; color: #92400e; padding: 2px 6px;">{{ a.priority }}</span></td>
+                    <td style="padding: 12px 14px;"><span class="badge" style="background: #dbeafe; color: #1e40af; padding: 2px 6px;">{{ a.status }}</span></td>
+                    <td style="padding: 12px 14px;">{{ a.assigned_to.full_name if a.assigned_to else 'Unassigned' }}</td>
+                    <td style="padding: 12px 14px;">{{ a.due_date.strftime('%d %b %Y') if a.due_date else 'Flexible' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% elif tab == 'attendance' %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 1.05rem; font-weight: 600; margin: 0;">Attendance & Operations Report</h3>
+        <span class="text-muted" style="font-size: 0.85rem;">Showing {{ attendances|length }} logs</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--arch-border); text-align: left; color: var(--arch-muted); font-size: 0.8rem; text-transform: uppercase;">
+                    <th style="padding: 12px 14px;">Date</th>
+                    <th style="padding: 12px 14px;">Employee</th>
+                    <th style="padding: 12px 14px;">Status</th>
+                    <th style="padding: 12px 14px;">Check In</th>
+                    <th style="padding: 12px 14px;">Check Out</th>
+                    <th style="padding: 12px 14px;">Working Hours</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for att in attendances %}
+                <tr style="border-bottom: 1px solid var(--arch-border); font-size: 0.85rem;">
+                    <td style="padding: 12px 14px; font-weight: 600;">{{ att.attendance_date.strftime('%d %b %Y') if att.attendance_date else '' }}</td>
+                    <td style="padding: 12px 14px;">{{ att.user.full_name if att.user else 'Unknown' }}</td>
+                    <td style="padding: 12px 14px;"><span class="badge" style="background: {% if att.status == 'Present' %}#d1fae5; color: #065f46;{% else %}#fee2e2; color: #991b1b;{% endif %} padding: 2px 6px;">{{ att.status }}</span></td>
+                    <td style="padding: 12px 14px;">{{ att.check_in_time.strftime('%H:%M:%S') if att.check_in_time else '--' }}</td>
+                    <td style="padding: 12px 14px;">{{ att.check_out_time.strftime('%H:%M:%S') if att.check_out_time else '--' }}</td>
+                    <td style="padding: 12px 14px;">{{ '{:.2f}'.format(att.working_hours) if att.working_hours else '--' }} hrs</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}New Joiners & Onboarding - ARCH Realty HRMS{% endblock %}
+
+{% block content %}
+<div class="workspace-header">
+  <div class="workspace-title">
+    <h1><i class="bi bi-person-plus-fill" style="color: #16A34A;"></i> New Joiners & Onboarding Tracker</h1>
+    <p>6-stage corporate onboarding progression: contract, KYC, IT assets, email, biometric & team orientation</p>
+  </div>
+  <div class="btn-group-custom">
+    <a href="{{ url_for('hr.hr_dashboard') }}" class="btn-secondary-hr"><i class="bi bi-speedometer2"></i> Command Center</a>
+    <button type="button" class="btn-success-hr" onclick="openHrModal('newOnboardModal')"><i class="bi bi-person-plus"></i> + Start Onboarding</button>
+  </div>
+</div>
+
+<div class="split-grid-2">
+  {% for ob in onboardings %}
+  {% set pct = (ob.checklist_completed / ob.total_checklist_items * 100)|round|int %}
+  <div class="card-container" style="margin-bottom: 0;">
+    <div class="card-header-hr">
+      <div>
+        <h3 style="font-size: 14px;">{{ ob.user.full_name }}</h3>
+        <span style="font-size: 11px; color: var(--text-secondary);">{{ ob.role_title or ob.user.role }} &bull; {{ ob.user.department }}</span>
+      </div>
+      <div>
+        {% if ob.status == 'Completed' %}
+          <span class="badge-hr badge-verified"><i class="bi bi-check-circle-fill"></i> Completed</span>
+        {% else %}
+          <span class="badge-hr badge-pending"><i class="bi bi-hourglass-split"></i> {{ pct }}% Complete</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="padding: 16px;">
+      <!-- Progress Bar -->
+      <div style="background: #E2E8F0; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 14px;">
+        <div style="background: {% if pct == 100 %}#16A34A{% else %}var(--brand-primary){% endif %}; width: {{ pct }}%; height: 100%;"></div>
+      </div>
+
+      <!-- Checklist Milestones -->
+      <div style="background: #F8FAFC; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; margin-bottom: 14px;">
+        <span style="font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; display: block; margin-bottom: 8px;">6-Step Onboarding Checkpoints:</span>
+        <div class="form-grid-2" style="font-size: 11px; row-gap: 6px;">
+          <div><i class="bi bi-{% if ob.checklist_completed >= 1 %}check-circle-fill" style="color: #16A34A;{% else %}circle" style="color: #94A3B8;{% endif %}"></i> 1. Offer Acceptance</div>
+          <div><i class="bi bi-{% if ob.checklist_completed >= 2 %}check-circle-fill" style="color: #16A34A;{% else %}circle" style="color: #94A3B8;{% endif %}"></i> 2. KYC & Compliance Docs</div>
+          <div><i class="bi bi-{% if ob.checklist_completed >= 3 %}check-circle-fill" style="color: #16A34A;{% else %}circle" style="color: #94A3B8;{% endif %}"></i> 3. Workstation & Hardware</div>
+          <div><i class="bi bi-{% if ob.checklist_completed >= 4 %}check-circle-fill" style="color: #16A34A;{% else %}circle" style="color: #94A3B8;{% endif %}"></i> 4. Email & CRM Provisioning</div>
+          <div><i class="bi bi-{% if ob.checklist_completed >= 5 %}check-circle-fill" style="color: #16A34A;{% else %}circle" style="color: #94A3B8;{% endif %}"></i> 5. Biometric Attendance</div>
+          <div><i class="bi bi-{% if ob.checklist_completed >= 6 %}check-circle-fill" style="color: #16A34A;{% else %}circle" style="color: #94A3B8;{% endif %}"></i> 6. Team Induction & Briefing</div>
+        </div>
+      </div>
+
+      {% if ob.notes %}
+      <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 12px;"><em>Notes: {{ ob.notes }}</em></p>
+      {% endif %}
+
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 12px;">
+        <a href="{{ url_for('hr.employee_profile', user_id=ob.user.id) }}" class="btn-secondary-hr btn-sm-hr">View Profile</a>
+        <div style="display: flex; gap: 6px;">
+          {% if ob.status != 'Completed' %}
+          <form method="POST" action="{{ url_for('hr.update_onboarding_step', id=ob.id) }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-secondary-hr btn-sm-hr"><i class="bi bi-arrow-right-circle"></i> Next Step</button>
+          </form>
+          <form method="POST" action="{{ url_for('hr.complete_onboarding', id=ob.id) }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-success-hr btn-sm-hr"><i class="bi bi-check-lg"></i> Complete All</button>
+          </form>
+          {% else %}
+          <span style="font-size: 11px; color: #166534; font-weight: 600;"><i class="bi bi-patch-check-fill"></i> Fully Onboarded</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="card-container" style="grid-column: span 2; padding: 40px; text-align: center; color: var(--text-secondary);">
+    <i class="bi bi-person-plus" style="font-size: 32px; display: block; margin-bottom: 8px;"></i>
+    No active onboarding workflows found.
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Modal Start Onboarding -->
+<div class="modal-overlay-hr" id="newOnboardModal">
+  <div class="modal-body-hr">
+    <form method="POST" action="{{ url_for('hr.create_onboarding') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header-hr">
+        <h4>Initiate Employee Onboarding</h4>
+        <button type="button" class="modal-close-btn" onclick="closeHrModal('newOnboardModal')">&times;</button>
+      </div>
+      <div class="modal-content-hr">
+        <div class="form-group-hr">
+          <label>Employee</label>
+          <select name="user_id" required>
+            <option value="">-- Select Employee --</option>
+            {% for u in users %}
+            <option value="{{ u.id }}">{{ u.full_name }} ({{ u.department }} - {{ u.role }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group-hr">
+          <label>Designation / Role Title</label>
+          <input type="text" name="role_title" placeholder="e.g. Sales Executive - Commercial">
+        </div>
+        <div class="form-group-hr">
+          <label>Onboarding Notes</label>
+          <textarea name="notes" rows="2" placeholder="Initial setup notes..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer-hr">
+        <button type="button" class="btn-secondary-hr" onclick="closeHrModal('newOnboardModal')">Cancel</button>
+        <button type="submit" class="btn-success-hr">Initialize Workflow</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

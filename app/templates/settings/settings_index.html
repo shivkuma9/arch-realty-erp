@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Settings & Access Control - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Enterprise System Settings</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Role-based user management, database point-in-time backup, and immutable audit logs</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <form method="POST" action="{{ url_for('settings.backup_database') }}" style="display: inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline btn-sm"><i class="bi bi-database-down"></i> Instant DB Backup</button>
+        </form>
+        <a href="{{ url_for('settings.create_user') }}" class="btn btn-primary btn-sm"><i class="bi bi-person-plus-fill"></i> Create New User</a>
+    </div>
+</div>
+
+<!-- Users List -->
+<div class="card" style="padding: 0; margin-bottom: 1.5rem;">
+    <div style="padding: 1rem; border-bottom: 1px solid var(--arch-border); font-weight: 600;">
+        System User Accounts & Role Permissions
+    </div>
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Full Name</th>
+                    <th>Role</th>
+                    <th>Department</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td><strong>{{ u.username }}</strong></td>
+                    <td>{{ u.full_name }}<br><small style="color: var(--arch-text-muted);">{{ u.email }}</small></td>
+                    <td><span class="badge badge-primary">{{ u.role }}</span></td>
+                    <td>{{ u.department }}</td>
+                    <td>
+                        <span class="badge {% if u.is_active %}badge-success{% else %}badge-danger{% endif %}">
+                            {{ 'Active' if u.is_active else 'Deactivated' }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if u.id != current_user.id %}
+                        <form method="POST" action="{{ url_for('settings.toggle_user_status', user_id=u.id) }}" style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline btn-sm">
+                                {{ 'Deactivate' if u.is_active else 'Activate' }}
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- System Audit Log Trail -->
+<div class="card" style="padding: 0;">
+    <div style="padding: 1rem; border-bottom: 1px solid var(--arch-border); font-weight: 600;">
+        Security Audit Trail (Last 50 Events)
+    </div>
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Entity</th>
+                    <th>Details</th>
+                    <th>IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in audit_logs %}
+                <tr>
+                    <td style="font-size: 0.8rem; color: var(--arch-text-muted);">{{ a.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>{{ a.user.full_name if a.user else 'System' }}</td>
+                    <td><span class="badge badge-secondary">{{ a.action }}</span></td>
+                    <td>{{ a.entity_type }} #{{ a.entity_id or '-' }}</td>
+                    <td style="font-size: 0.85rem;">{{ a.details }}</td>
+                    <td style="font-size: 0.8rem; color: var(--arch-text-muted);">{{ a.ip_address or '127.0.0.1' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--arch-text-muted);">No audit events logged.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

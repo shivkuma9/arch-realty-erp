@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Property Owners & Mandates - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Property Owners Directory</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Landlords, property developers, and mandate holders</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{{ url_for('properties.mandates_list') }}" class="btn btn-outline btn-sm">View Mandates</a>
+        <a href="{{ url_for('properties.create_owner') }}" class="btn btn-primary btn-sm">+ Register Owner</a>
+    </div>
+</div>
+
+<div class="card" style="padding: 0;">
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Owner Code</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Contact Mode</th>
+                    <th>Associated Properties</th>
+                    <th>PAN / ID</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in owners %}
+                <tr>
+                    <td><strong>{{ o.owner_code }}</strong></td>
+                    <td>{{ o.name }}</td>
+                    <td><a href="tel:{{ o.phone }}">{{ o.phone }}</a></td>
+                    <td>{{ o.email or '-' }}</td>
+                    <td><span class="badge badge-secondary">{{ o.preferred_contact_method }}</span></td>
+                    <td>{{ o.properties | length }} Listings</td>
+                    <td>{{ o.pan_or_id or '-' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--arch-text-muted);">No owners registered yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

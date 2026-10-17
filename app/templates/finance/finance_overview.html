@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Brokerage & Financial Management - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Brokerage & Financial Accounting</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Audit-safe financial collections, tax invoicing, and operational expenditures</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{{ url_for('finance.record_payment') }}" class="btn btn-primary btn-sm"><i class="bi bi-credit-card-2-front"></i> Record Payment Receipt</a>
+    </div>
+</div>
+
+<!-- Financial Summary Cards -->
+<div class="grid-cols-4">
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-blue-primary);">
+        <span class="kpi-label">Expected Brokerage</span>
+        <span class="kpi-value" style="font-size: 1.4rem;">{{ total_expected | inr }}</span>
+        <span class="kpi-subtitle">Contracted Revenue</span>
+    </div>
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-success);">
+        <span class="kpi-label">Realized Collections</span>
+        <span class="kpi-value" style="font-size: 1.4rem; color: var(--arch-success);">{{ total_received | inr }}</span>
+        <span class="kpi-subtitle">Received in Bank</span>
+    </div>
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-danger);">
+        <span class="kpi-label">Outstanding Receivables</span>
+        <span class="kpi-value" style="font-size: 1.4rem; color: var(--arch-danger);">{{ total_outstanding | inr }}</span>
+        <span class="kpi-subtitle">Due from Clients/Owners</span>
+    </div>
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-warning);">
+        <span class="kpi-label">Operating Expenses</span>
+        <span class="kpi-value" style="font-size: 1.4rem;">{{ total_expenses | inr }}</span>
+        <span class="kpi-subtitle">Net Margin: {{ net_margin | inr }}</span>
+    </div>
+</div>
+
+<div class="grid-cols-2">
+    <!-- Brokerages Registry -->
+    <div class="card" style="padding: 0;">
+        <div style="padding: 1rem; border-bottom: 1px solid var(--arch-border); font-weight: 600;">
+            Deals Brokerage Ledgers
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Deal Code</th>
+                        <th>Client</th>
+                        <th>Expected</th>
+                        <th>Received</th>
+                        <th>Outstanding</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in brokerages %}
+                    <tr>
+                        <td><strong>{{ b.deal.deal_code }}</strong></td>
+                        <td>{{ b.deal.client.name }}</td>
+                        <td>{{ b.expected_amount | inr }}</td>
+                        <td style="color: var(--arch-success);">{{ b.received_amount | inr }}</td>
+                        <td style="color: var(--arch-danger);">{{ b.outstanding_amount | inr }}</td>
+                        <td><span class="badge {% if b.status == 'Fully Paid' %}badge-success{% else %}badge-warning{% endif %}">{{ b.status }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--arch-text-muted);">No brokerage accounts created yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Payments Receipts Received -->
+    <div class="card" style="padding: 0;">
+        <div style="padding: 1rem; border-bottom: 1px solid var(--arch-border); font-weight: 600;">
+            Recent Payment Receipts
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Receipt No</th>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Mode</th>
+                        <th>Ref UTR</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in payments %}
+                    <tr>
+                        <td><strong>{{ p.receipt_number }}</strong></td>
+                        <td>{{ p.payment_date }}</td>
+                        <td><strong style="color: var(--arch-success);">{{ p.amount | inr }}</strong></td>
+                        <td><span class="badge badge-secondary">{{ p.payment_mode }}</span></td>
+                        <td>{{ p.transaction_ref or '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--arch-text-muted);">No payment receipts recorded yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Commission Payouts & Approvals -->
+<div class="card" id="commissions" style="padding: 0; margin-top: 1.5rem;">
+    <div style="padding: 1rem; border-bottom: 1px solid var(--arch-border); display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 600;">Internal BDE & External Channel Partner Commissions</span>
+        <a href="{{ url_for('finance.commission_claim') }}" class="btn btn-primary btn-sm">+ New Commission Claim</a>
+    </div>
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Deal Reference</th>
+                    <th>Beneficiary</th>
+                    <th>Recipient Type</th>
+                    <th>Rate / Incentive</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in commissions %}
+                <tr>
+                    <td><strong>{{ c.deal.deal_code }}</strong> - {{ c.deal.title }}</td>
+                    <td>
+                        {% if c.user %}
+                            {{ c.user.full_name }} ({{ c.user.role }})
+                        {% else %}
+                            {{ c.partner_name }} <span class="badge badge-info">External CP</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ c.recipient_type }}</td>
+                    <td>{{ c.commission_type }} ({{ c.percentage }}%)</td>
+                    <td><strong style="color: var(--arch-blue-primary);">{{ c.amount | inr }}</strong></td>
+                    <td>
+                        <span class="badge {% if c.status == 'Disbursed' %}badge-success{% elif c.status == 'Approved' %}badge-info{% elif c.status == 'Rejected' %}badge-danger{% else %}badge-warning{% endif %}">
+                            {{ c.status }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if c.status == 'Pending Approval' and current_user.is_management() %}
+                        <form method="POST" action="{{ url_for('finance.approve_commission', comm_id=c.id) }}" style="display: inline-flex; gap: 0.25rem;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" name="action" value="Approved" class="btn btn-success btn-sm">Approve</button>
+                            <button type="submit" name="action" value="Rejected" class="btn btn-outline btn-sm" style="color: red;">Reject</button>
+                        </form>
+                        {% elif c.status == 'Approved' and current_user.is_accounts() %}
+                        <form method="POST" action="{{ url_for('finance.approve_commission', comm_id=c.id) }}" style="display: inline-flex; gap: 0.25rem;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" name="action" value="Disbursed" class="btn btn-primary btn-sm">Mark Disbursed</button>
+                        </form>
+                        {% else %}
+                        <span style="font-size: 0.8rem; color: var(--arch-text-muted);">{{ c.payout_date or 'Settled' }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--arch-text-muted);">No commission claims recorded yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Operational Expenses Table -->
+<div class="card" id="expenses" style="padding: 0; margin-top: 1.5rem;">
+    <div style="padding: 1rem; border-bottom: 1px solid var(--arch-border); display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 600;">Office Operational & Marketing Expenses</span>
+        <a href="{{ url_for('finance.add_expense') }}" class="btn btn-outline btn-sm">+ Record Expense</a>
+    </div>
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Expense Title</th>
+                    <th>Category</th>
+                    <th>Paid To / Vendor</th>
+                    <th>Payment Mode</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in expenses %}
+                <tr>
+                    <td>{{ e.expense_date }}</td>
+                    <td><strong>{{ e.title }}</strong></td>
+                    <td><span class="badge badge-secondary">{{ e.category }}</span></td>
+                    <td>{{ e.paid_to }}</td>
+                    <td>{{ e.payment_mode }}</td>
+                    <td><strong style="color: var(--arch-danger);">{{ e.amount | inr }}</strong></td>
+                    <td><span class="badge badge-success">{{ e.approval_status }}</span></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--arch-text-muted);">No expenses recorded yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

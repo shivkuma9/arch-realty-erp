@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Lead Source Attribution & Channels - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Digital Marketing Lead Attribution & Channel Stream</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Trace every prospect back to their originating digital ad campaign, portal, or referral source</p>
+    </div>
+    <a href="{{ url_for('marketing.index') }}" class="btn btn-outline btn-sm"><i class="bi bi-arrow-left"></i> Dashboard</a>
+</div>
+
+<!-- Channel Distribution Widgets -->
+<div class="grid-cols-4" style="margin-bottom: 1.5rem;">
+    {% for channel, count in channel_counts %}
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-blue-primary);">
+        <div class="kpi-header">
+            <span class="kpi-label">{{ channel }}</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-blue-primary);"><i class="bi bi-diagram-3-fill"></i></div>
+        </div>
+        <span class="kpi-value" style="font-size: 1.5rem;">{{ count }}</span>
+        <span class="kpi-subtitle">Direct Leads</span>
+    </div>
+    {% else %}
+    <div class="kpi-card" style="grid-column: span 4; text-align: center; color: var(--arch-text-muted);">
+        No channel attribution data logged yet.
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Detailed Attribution Stream Table -->
+<div class="card" style="padding: 0;">
+    <div style="padding: 1rem; border-bottom: 1px solid var(--arch-border); font-weight: 600;">
+        <i class="bi bi-funnel-fill" style="color: var(--arch-success);"></i> Incoming Marketing Leads & Source Attribution
+    </div>
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Date & Time</th>
+                    <th>Prospect Name</th>
+                    <th>Phone / Email</th>
+                    <th>Source Channel</th>
+                    <th>Originating Ad Campaign</th>
+                    <th>Category Interest</th>
+                    <th>CRM Conversion Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inq in inquiries %}
+                <tr>
+                    <td>{{ inq.inquiry_date.strftime('%d %b %Y, %I:%M %p') }}</td>
+                    <td><strong>{{ inq.prospect_name }}</strong></td>
+                    <td>
+                        <i class="bi bi-telephone"></i> {{ inq.phone }}<br>
+                        {% if inq.email %}<small style="color: var(--arch-text-muted);"><i class="bi bi-envelope"></i> {{ inq.email }}</small>{% endif %}
+                    </td>
+                    <td><span class="badge badge-info">{{ inq.source_channel }}</span></td>
+                    <td>
+                        <strong>{{ inq.campaign.name }}</strong><br>
+                        <small style="color: var(--arch-text-muted);">{{ inq.campaign.campaign_code }} ({{ inq.campaign.platform }})</small>
+                    </td>
+                    <td><span class="badge badge-primary">{{ inq.preferred_category }}</span></td>
+                    <td>
+                        <span class="badge {% if inq.status == 'Synced to CRM' %}badge-success{% else %}badge-info{% endif %}">
+                            {{ inq.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" style="text-align: center; color: var(--arch-text-muted); padding: 3rem;">No marketing lead attribution records available yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

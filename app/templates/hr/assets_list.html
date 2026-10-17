@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Office Assets & Equipment Management - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Office Hardware, Instruments & Keys Management</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">
+            Inventory tracking for company laptops, laser distance meters, master keys, and mobile equipment
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('hr.create_asset') }}" class="btn btn-primary btn-sm">+ Register New Asset</a>
+    </div>
+</div>
+
+<div class="card" style="padding: 0;">
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Asset Tag</th>
+                    <th>Equipment Name</th>
+                    <th>Category</th>
+                    <th>Serial / Model</th>
+                    <th>Custodian / Allocated To</th>
+                    <th>Allocation Date</th>
+                    <th>Value</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in assets %}
+                <tr>
+                    <td><strong>{{ a.asset_code }}</strong></td>
+                    <td><strong style="color: var(--arch-blue-primary);">{{ a.asset_name }}</strong></td>
+                    <td><span class="badge badge-secondary">{{ a.category }}</span></td>
+                    <td>{{ a.serial_number or '-' }}</td>
+                    <td>
+                        {% if a.allocated_to %}
+                            <strong>{{ a.allocated_to.full_name }}</strong><br>
+                            <small style="color: var(--arch-text-muted);">{{ a.allocated_to.role }}</small>
+                        {% else %}
+                            <span style="color: var(--arch-text-muted);">In Office Storage</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ a.allocation_date or '-' }}</td>
+                    <td>{{ a.purchase_cost | inr }}</td>
+                    <td>
+                        <span class="badge {% if a.status == 'Allocated to Employee' %}badge-info{% elif a.status == 'In Stock / Available' %}badge-success{% elif a.status == 'Under Repair' %}badge-warning{% else %}badge-danger{% endif %}">
+                            {{ a.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 2.5rem; color: var(--arch-text-muted);">
+                        No office assets recorded. Click '+ Register New Asset' to track laptops, laser meters, or keys.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

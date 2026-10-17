@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}IT Support Tickets & Helpdesk - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Real Estate IT Tickets & Helpdesk Queue</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Portal lead sync incidents, field agent GPS/tablet issues, WhatsApp API delivery, and brokerage system support</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{{ url_for('it.index') }}" class="btn btn-outline btn-sm"><i class="bi bi-arrow-left"></i> IT Command Center</a>
+        <a href="{{ url_for('it.create_ticket') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Log New Ticket</a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="padding: 1rem; margin-bottom: 1.25rem;">
+    <form method="GET" style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+        <select name="status" class="form-control" style="width: 160px;">
+            <option value="">All Statuses</option>
+            {% for s in ['Open', 'In Progress', 'Pending Vendor', 'Resolved', 'Closed'] %}
+            <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="priority" class="form-control" style="width: 160px;">
+            <option value="">All Priorities</option>
+            {% for p in ['Low', 'Medium', 'High', 'Critical'] %}
+            <option value="{{ p }}" {% if priority_filter == p %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit" class="btn btn-outline btn-sm"><i class="bi bi-funnel"></i> Apply Filter</button>
+        {% if status_filter or priority_filter %}
+        <a href="{{ url_for('it.tickets_list') }}" class="btn btn-outline btn-sm" style="color: var(--arch-text-muted);">Reset</a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Tickets Table -->
+<div class="card" style="padding: 0;">
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Ticket Code</th>
+                    <th>Issue Summary & Description</th>
+                    <th>Category</th>
+                    <th>Priority</th>
+                    <th>Requested By</th>
+                    <th>Logged Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in tickets %}
+                <tr>
+                    <td><strong>{{ t.ticket_number }}</strong></td>
+                    <td>
+                        <strong style="color: var(--arch-blue-primary);">{{ t.title }}</strong><br>
+                        <small style="color: var(--arch-text-muted);">{{ t.description[:90] }}{% if t.description|length > 90 %}...{% endif %}</small>
+                        {% if t.resolution_notes %}
+                        <div style="font-size: 0.75rem; color: var(--arch-success); margin-top: 0.25rem;">
+                            <i class="bi bi-check-circle"></i> {{ t.resolution_notes }}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge badge-info">{{ t.category }}</span></td>
+                    <td>
+                        <span class="badge {% if t.priority == 'Critical' %}badge-danger{% elif t.priority == 'High' %}badge-warning{% else %}badge-primary{% endif %}">
+                            {{ t.priority }}
+                        </span>
+                    </td>
+                    <td>
+                        <strong>{{ t.requested_by.full_name }}</strong><br>
+                        <small style="color: var(--arch-text-muted);">{{ t.requested_by.department }}</small>
+                    </td>
+                    <td>{{ t.created_at.strftime('%d %b %Y, %I:%M %p') }}</td>
+                    <td>
+                        <span class="badge {% if t.status in ['Resolved', 'Closed'] %}badge-success{% elif t.status == 'In Progress' %}badge-info{% else %}badge-warning{% endif %}">
+                            {{ t.status }}
+                        </span>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 0.35rem;">
+                            {% if t.status == 'Open' %}
+                            <form method="POST" action="{{ url_for('it.update_ticket', ticket_id=t.id) }}" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="status" value="In Progress">
+                                <button type="submit" class="btn btn-outline btn-sm" title="Mark In Progress" style="font-size: 11px; padding: 2px 6px;">
+                                    Start
+                                </button>
+                            </form>
+                            {% endif %}
+
+                            {% if t.status != 'Resolved' %}
+                            <form method="POST" action="{{ url_for('it.update_ticket', ticket_id=t.id) }}" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="status" value="Resolved">
+                                <input type="hidden" name="resolution_notes" value="Issue resolved and verified by IT support.">
+                                <button type="submit" class="btn btn-outline btn-sm" title="Mark Resolved" style="color: var(--arch-success); font-size: 11px; padding: 2px 6px;">
+                                    <i class="bi bi-check-lg"></i> Done
+                                </button>
+                            </form>
+                            {% else %}
+                            <span style="font-size: 0.8rem; color: var(--arch-success);"><i class="bi bi-check-circle-fill"></i> Closed</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" style="text-align: center; color: var(--arch-text-muted); padding: 3rem;">No IT tickets found matching criteria.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

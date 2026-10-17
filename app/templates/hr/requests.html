@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}HR Requests & Certificates - ARCH Realty HRMS{% endblock %}
+
+{% block content %}
+<div class="workspace-header">
+  <div class="workspace-title">
+    <h1><i class="bi bi-envelope-paper-fill" style="color: #0284C7;"></i> Internal HR Requests & Certificates</h1>
+    <p>Bonafide letters, service experience certificates, address updates & salary slip requests</p>
+  </div>
+  <div class="btn-group-custom">
+    <a href="{{ url_for('hr.hr_dashboard') }}" class="btn-secondary-hr"><i class="bi bi-speedometer2"></i> Command Center</a>
+    <button type="button" class="btn-primary-hr" onclick="openHrModal('newReqModal')"><i class="bi bi-plus-circle"></i> + Raise HR Request</button>
+  </div>
+</div>
+
+<div class="card-container">
+  <div class="card-header-hr">
+    <h3><i class="bi bi-list-check" style="color: var(--brand-primary);"></i> Service Requests Queue ({{ requests|length }})</h3>
+  </div>
+  <table class="hr-table">
+    <thead>
+      <tr>
+        <th>Request Code</th>
+        <th>Employee</th>
+        <th>Category</th>
+        <th>Details / Purpose</th>
+        <th>Submission Date</th>
+        <th>Status</th>
+        <th style="text-align: right;">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in requests %}
+      <tr>
+        <td><b>{{ r.request_code }}</b></td>
+        <td>
+          <a href="{{ url_for('hr.employee_profile', user_id=r.user.id) }}" style="font-weight: 600; color: var(--brand-primary); text-decoration: none;">
+            {{ r.user.full_name }}
+          </a>
+          <div style="font-size: 10px; color: var(--text-secondary);">{{ r.user.department }}</div>
+        </td>
+        <td><b>{{ r.request_type }}</b></td>
+        <td style="color: var(--text-secondary); font-size: 11px;">{{ r.details }}</td>
+        <td>{{ r.request_date.strftime('%d %b %Y') }}</td>
+        <td>
+          {% if r.status == 'Completed' %}
+            <span class="badge-hr badge-verified"><i class="bi bi-check-circle-fill"></i> Completed</span>
+          {% elif r.status == 'Pending' %}
+            <span class="badge-hr badge-pending"><i class="bi bi-hourglass-split"></i> Pending Action</span>
+          {% else %}
+            <span class="badge-hr badge-rejected">Rejected</span>
+          {% endif %}
+        </td>
+        <td style="text-align: right;">
+          {% if r.status == 'Pending' %}
+          <form method="POST" action="{{ url_for('hr.fulfill_request', id=r.id) }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-success-hr btn-sm-hr"><i class="bi bi-check2-circle"></i> Fulfill</button>
+          </form>
+          {% else %}
+            <span style="font-size: 11px; color: var(--text-secondary);"><i class="bi bi-check2"></i> Signed off</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 30px;">No internal HR requests found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Modal Raise HR Request -->
+<div class="modal-overlay-hr" id="newReqModal">
+  <div class="modal-body-hr">
+    <form method="POST" action="{{ url_for('hr.create_hr_request') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header-hr">
+        <h4>Submit Internal HR Service Request</h4>
+        <button type="button" class="modal-close-btn" onclick="closeHrModal('newReqModal')">&times;</button>
+      </div>
+      <div class="modal-content-hr">
+        {% if current_user.has_role(Roles.SUPER_ADMIN, Roles.DIRECTOR, Roles.HR_OPS) %}
+        <div class="form-group-hr">
+          <label>Employee On Behalf Of</label>
+          <select name="user_id">
+            {% for u in users %}
+            <option value="{{ u.id }}">{{ u.full_name }} ({{ u.department }} - {{ u.role }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+        <div class="form-group-hr">
+          <label>Request Category</label>
+          <select name="request_type" required>
+            <option value="Bonafide Certificate">Bonafide Certificate (Bank Loan / Visa)</option>
+            <option value="Experience Letter Request">Experience Letter / Service Certificate</option>
+            <option value="Address Update Request">Permanent Address / Contact Update</option>
+            <option value="Salary Slip Request">Official Stamped Salary Slip Request</option>
+          </select>
+        </div>
+        <div class="form-group-hr">
+          <label>Details / Justification</label>
+          <textarea name="details" rows="3" placeholder="Specify requirements, reason, or details..." required></textarea>
+        </div>
+      </div>
+      <div class="modal-footer-hr">
+        <button type="button" class="btn-secondary-hr" onclick="closeHrModal('newReqModal')">Cancel</button>
+        <button type="submit" class="btn-primary-hr">Submit Request</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+
+{% block title %}HR Command Center - ARCH Realty ERP{% endblock %}
+
+{% block content %}
+<div class="workspace-header">
+  <div class="workspace-title">
+    <h1><i class="bi bi-people-fill" style="color: var(--brand-primary);"></i> HR Command Center</h1>
+    <p>Managing complete employee lifecycle, daily operations & compliance for ARCH REALTY</p>
+  </div>
+  <div class="btn-group-custom">
+    <a href="{{ url_for('hr.employees_list') }}" class="btn-secondary-hr"><i class="bi bi-person-lines-fill"></i> Directory</a>
+    <a href="{{ url_for('hr.documents_list') }}" class="btn-secondary-hr"><i class="bi bi-folder-check"></i> Documents</a>
+    <a href="{{ url_for('hr.onboarding_list') }}" class="btn-secondary-hr"><i class="bi bi-person-plus"></i> Onboarding</a>
+    <a href="{{ url_for('hr.leaves_list') }}" class="btn-secondary-hr"><i class="bi bi-calendar2-check"></i> Leaves</a>
+    <button type="button" class="btn-primary-hr" onclick="openHrModal('quickDocModal')"><i class="bi bi-cloud-arrow-up"></i> + Upload Document</button>
+  </div>
+</div>
+
+<!-- TOP HR KPI CARDS -->
+<div class="kpi-grid">
+  <a href="{{ url_for('hr.employees_list') }}" class="kpi-card">
+    <div class="kpi-title">
+      Total Employees <i class="bi bi-people" style="font-size: 14px;"></i>
+    </div>
+    <div class="kpi-value">{{ total_workforce }}</div>
+    <div class="kpi-sub" style="color: #166534;"><i class="bi bi-check-circle"></i> Active Roster &bull; 100% registered</div>
+  </a>
+
+  <a href="{{ url_for('hr.attendance') }}" class="kpi-card">
+    <div class="kpi-title">
+      Present Today <i class="bi bi-person-check" style="font-size: 14px;"></i>
+    </div>
+    <div class="kpi-value" style="color: #166534;">{{ present_count }}</div>
+    <div class="kpi-sub" style="color: #166534;"><i class="bi bi-graph-up"></i> {{ attendance_rate }}% attendance rate</div>
+  </a>
+
+  <a href="{{ url_for('hr.leaves_list') }}" class="kpi-card">
+    <div class="kpi-title">
+      On Leave Today <i class="bi bi-calendar-minus" style="font-size: 14px;"></i>
+    </div>
+    <div class="kpi-value" style="color: #854D0E;">{{ leave_count }}</div>
+    <div class="kpi-sub" style="color: #854D0E;"><i class="bi bi-hourglass-split"></i> {{ pending_leaves|length }} Pending Sanction</div>
+  </a>
+
+  <a href="{{ url_for('hr.documents_list') }}" class="kpi-card">
+    <div class="kpi-title">
+      Pending Actions <i class="bi bi-exclamation-octagon" style="font-size: 14px;"></i>
+    </div>
+    <div class="kpi-value" style="color: #991B1B;">{{ pending_actions_count }}</div>
+    <div class="kpi-sub" style="color: #991B1B;"><i class="bi bi-shield-alert"></i> Action Required</div>
+  </a>
+</div>
+
+<!-- TODAY'S HR SUMMARY PILLS BAR -->
+<div class="summary-pills-bar">
+  <div class="summary-pill">
+    <span class="summary-label">Active Present</span>
+    <span class="summary-count" style="color: #166534;">{{ present_count }}</span>
+  </div>
+  <div class="summary-pill">
+    <span class="summary-label">On Leave</span>
+    <span class="summary-count" style="color: #991B1B;">{{ leave_count }}</span>
+  </div>
+  <div class="summary-pill">
+    <span class="summary-label">Docs Review</span>
+    <span class="summary-count" style="color: #854D0E;">{{ pending_docs|length }}</span>
+  </div>
+  <div class="summary-pill">
+    <span class="summary-label">New Joiners</span>
+    <span class="summary-count" style="color: var(--brand-primary);">{{ in_progress_onboarding|length }}</span>
+  </div>
+  <div class="summary-pill">
+    <span class="summary-label">Notice Period</span>
+    <span class="summary-count" style="color: #64748B;">{{ notice_exits|length }}</span>
+  </div>
+  <div class="summary-pill">
+    <span class="summary-label">HR Requests</span>
+    <span class="summary-count" style="color: #0284C7;">{{ pending_requests|length }}</span>
+  </div>
+</div>
+
+<!-- SPLIT GRID 1: HR ACTIONS REQUIRED & ATTENDANCE SNAPSHOT -->
+<div class="split-grid-2">
+  <!-- PENDING HR ACTIONS REQUIRED -->
+  <div class="card-container">
+    <div class="card-header-hr">
+      <h3><i class="bi bi-exclamation-circle-fill" style="color: var(--brand-primary);"></i> Pending HR Actions Required</h3>
+      <span class="badge-hr badge-pending">{{ pending_actions_count }} items</span>
+    </div>
+
+    {% for leave in pending_leaves %}
+    <div class="action-item">
+      <div class="action-info">
+        <b>Leave Request &bull; {{ leave.user.full_name }} ({{ leave.user.department }})</b>
+        <span>{{ leave.leave_type }}: {{ leave.start_date.strftime('%d %b') }} &rarr; {{ leave.end_date.strftime('%d %b %Y') }} &bull; "{{ leave.reason }}"</span>
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <form method="POST" action="{{ url_for('hr.review_leave', leave_id=leave.id) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="Approved">
+          <button type="submit" class="btn-success-hr btn-sm-hr">Approve</button>
+        </form>
+        <form method="POST" action="{{ url_for('hr.review_leave', leave_id=leave.id) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="Rejected">
+          <button type="submit" class="btn-danger-hr btn-sm-hr">Reject</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+
+    {% for doc in pending_docs %}
+    <div class="action-item">
+      <div class="action-info">
+        <b>KYC Document Verification &bull; {{ doc.user.full_name }}</b>
+        <span>{{ doc.document_name }} ({{ doc.category }}) &bull; Uploaded {{ doc.upload_date.strftime('%d %b %Y') }}</span>
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <form method="POST" action="{{ url_for('hr.verify_document', doc_id=doc.id) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn-primary-hr btn-sm-hr">Verify</button>
+        </form>
+        <button type="button" class="btn-secondary-hr btn-sm-hr" onclick="openHrModal('rejectModal{{ doc.id }}')">Reject</button>
+      </div>
+    </div>
+
+    <!-- Rejection Modal -->
+    <div class="modal-overlay-hr" id="rejectModal{{ doc.id }}">
+      <div class="modal-body-hr">
+        <form method="POST" action="{{ url_for('hr.reject_document', doc_id=doc.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="modal-header-hr">
+            <h4>Reject Document: {{ doc.document_name }}</h4>
+            <button type="button" class="modal-close-btn" onclick="closeHrModal('rejectModal{{ doc.id }}')">&times;</button>
+          </div>
+          <div class="modal-content-hr">
+            <div class="form-group-hr">
+              <label>Reason for rejection / deficiency notice:</label>
+              <textarea name="notes" rows="3" placeholder="Specify reason so employee can re-upload..." required></textarea>
+            </div>
+          </div>
+          <div class="modal-footer-hr">
+            <button type="button" class="btn-secondary-hr" onclick="closeHrModal('rejectModal{{ doc.id }}')">Cancel</button>
+            <button type="submit" class="btn-danger-hr">Reject Document</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+
+    {% for req in pending_requests %}
+    <div class="action-item">
+      <div class="action-info">
+        <b>HR Service Request &bull; {{ req.user.full_name }}</b>
+        <span>{{ req.request_type }} &bull; "{{ req.details }}"</span>
+      </div>
+      <form method="POST" action="{{ url_for('hr.fulfill_request', id=req.id) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn-primary-hr btn-sm-hr">Fulfill</button>
+      </form>
+    </div>
+    {% endfor %}
+
+    {% if pending_actions_count == 0 %}
+    <div style="padding: 30px; text-align: center; color: var(--text-secondary);">
+      <i class="bi bi-check-circle" style="font-size: 28px; color: #166534; display: block; margin-bottom: 6px;"></i>
+      <b>All HR queues are clear!</b>
+      <div style="font-size: 11px;">No pending leaves, unverified documents, or service requests.</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- REAL-TIME ATTENDANCE SNAPSHOT -->
+  <div class="card-container">
+    <div class="card-header-hr">
+      <h3><i class="bi bi-clock-history" style="color: var(--brand-primary);"></i> Real-Time Attendance Log</h3>
+      <a href="{{ url_for('hr.attendance') }}" class="btn-secondary-hr btn-sm-hr">My Attendance Log</a>
+    </div>
+    <table class="hr-table">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Department</th>
+          <th>In-Time</th>
+          <th>Work Mode</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for att in attendance_today %}
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div class="avatar-hr">{{ att.user.full_name[0] }}</div>
+              <div>
+                <a href="{{ url_for('hr.employee_profile', user_id=att.user.id) }}" style="font-weight: 600; color: var(--text-primary); text-decoration: none;">
+                  {{ att.user.full_name }}
+                </a>
+                <div style="font-size: 10px; color: var(--text-secondary);">{{ att.user.role }}</div>
+              </div>
+            </div>
+          </td>
+          <td>{{ att.user.department }}</td>
+          <td><b>{{ att.check_in_time.strftime('%I:%M %p') if att.check_in_time else '&mdash;' }}</b></td>
+          <td><span class="badge-hr badge-matching">{{ att.work_mode }}</span></td>
+          <td>
+            {% if att.status == 'Present' %}
+              <span class="badge-hr badge-verified"><i class="bi bi-check-circle-fill"></i> Present</span>
+            {% elif att.status == 'Field Duty' %}
+              <span class="badge-hr badge-matching"><i class="bi bi-geo-alt-fill"></i> Field Duty</span>
+            {% elif att.status == 'On Leave' %}
+              <span class="badge-hr badge-rejected"><i class="bi bi-calendar-x"></i> On Leave</span>
+            {% else %}
+              <span class="badge-hr badge-pending">{{ att.status }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 25px;">No attendance records logged for today yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- COMPLIANCE DOCUMENTS PREVIEW -->
+<div class="card-container">
+  <div class="card-header-hr">
+    <h3><i class="bi bi-folder-check" style="color: var(--brand-primary);"></i> Employee Documents Requiring Review</h3>
+    <a href="{{ url_for('hr.documents_list') }}" class="btn-primary-hr btn-sm-hr">View All Documents</a>
+  </div>
+  <table class="hr-table">
+    <thead>
+      <tr>
+        <th>Doc ID</th>
+        <th>Employee</th>
+        <th>Document Category</th>
+        <th>Document Name</th>
+        <th>Upload Date</th>
+        <th>Verification Status</th>
+        <th style="text-align: right;">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for doc in recent_docs %}
+      <tr>
+        <td><b>{{ doc.doc_code }}</b></td>
+        <td>
+          <a href="{{ url_for('hr.employee_profile', user_id=doc.user.id) }}" style="font-weight: 600; color: var(--brand-primary); text-decoration: none;">
+            {{ doc.user.full_name }}
+          </a>
+          <div style="font-size: 10px; color: var(--text-secondary);">{{ doc.user.department }}</div>
+        </td>
+        <td>{{ doc.category }}</td>
+        <td><b>{{ doc.document_name }}</b></td>
+        <td>{{ doc.upload_date.strftime('%d %b %Y') }}</td>
+        <td>
+          {% if doc.status == 'Verified' %}
+            <span class="badge-hr badge-verified"><i class="bi bi-check-circle-fill"></i> Verified</span>
+          {% elif doc.status == 'Pending Review' %}
+            <span class="badge-hr badge-pending"><i class="bi bi-hourglass-split"></i> Pending Review</span>
+          {% else %}
+            <span class="badge-hr badge-rejected"><i class="bi bi-x-circle-fill"></i> Rejected</span>
+          {% endif %}
+        </td>
+        <td style="text-align: right;">
+          {% if doc.status == 'Pending Review' %}
+          <div style="display: flex; gap: 6px; justify-content: flex-end;">
+            <form method="POST" action="{{ url_for('hr.verify_document', doc_id=doc.id) }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn-primary-hr btn-sm-hr">Verify</button>
+            </form>
+            <button type="button" class="btn-secondary-hr btn-sm-hr" onclick="openHrModal('rejectRecentModal{{ doc.id }}')">Reject</button>
+          </div>
+
+          <!-- Rejection Modal -->
+          <div class="modal-overlay-hr" id="rejectRecentModal{{ doc.id }}">
+            <div class="modal-body-hr" style="text-align: left;">
+              <form method="POST" action="{{ url_for('hr.reject_document', doc_id=doc.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header-hr">
+                  <h4>Reject Document: {{ doc.document_name }}</h4>
+                  <button type="button" class="modal-close-btn" onclick="closeHrModal('rejectRecentModal{{ doc.id }}')">&times;</button>
+                </div>
+                <div class="modal-content-hr">
+                  <div class="form-group-hr">
+                    <label>Reason for rejection / deficiency notice:</label>
+                    <textarea name="notes" rows="3" placeholder="Specify reason..." required></textarea>
+                  </div>
+                </div>
+                <div class="modal-footer-hr">
+                  <button type="button" class="btn-secondary-hr" onclick="closeHrModal('rejectRecentModal{{ doc.id }}')">Cancel</button>
+                  <button type="submit" class="btn-danger-hr">Reject</button>
+                </div>
+              </form>
+            </div>
+          </div>
+          {% else %}
+          <span style="font-size: 11px; color: var(--text-secondary);"><i class="bi bi-check2"></i> Signed off</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 25px;">No compliance documents recorded.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- QUICK UPLOAD DOCUMENT MODAL -->
+<div class="modal-overlay-hr" id="quickDocModal">
+  <div class="modal-body-hr">
+    <form method="POST" action="{{ url_for('hr.upload_document') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header-hr">
+        <h4>Upload Employee Compliance Document</h4>
+        <button type="button" class="modal-close-btn" onclick="closeHrModal('quickDocModal')">&times;</button>
+      </div>
+      <div class="modal-content-hr">
+        <div class="form-group-hr">
+          <label>Employee Name</label>
+          <select name="user_id" required>
+            <option value="">-- Select Employee --</option>
+            {% for att in attendance_today %}
+            <option value="{{ att.user.id }}">{{ att.user.full_name }} ({{ att.user.department }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group-hr">
+          <label>Document Category</label>
+          <select name="category" required>
+            <option value="Identity Proof">Identity Proof (Aadhar, PAN)</option>
+            <option value="Address Proof">Address Proof (Passport, Electricity Bill)</option>
+            <option value="Education Certificate">Education Certificate (Degree, Marksheet)</option>
+            <option value="Experience Letter">Experience Letter (Relieving, Offer)</option>
+            <option value="Bank Details">Bank Details (Cancelled Cheque, Statement)</option>
+          </select>
+        </div>
+        <div class="form-group-hr">
+          <label>Document Title</label>
+          <input type="text" name="document_name" placeholder="e.g. Aadhar Card Scan Copy" required>
+        </div>
+        <div class="form-group-hr">
+          <label>Notes / Remarks</label>
+          <textarea name="notes" rows="2" placeholder="Optional notes..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer-hr">
+        <button type="button" class="btn-secondary-hr" onclick="closeHrModal('quickDocModal')">Cancel</button>
+        <button type="submit" class="btn-primary-hr">Upload to Vault</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

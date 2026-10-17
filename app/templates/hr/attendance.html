@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance & Department Location Tracking - ARCH Realty{% endblock %}
+
+{% block extra_css %}
+<style>
+    #attendance-map {
+        height: 380px;
+        width: 100%;
+        border-radius: 8px;
+        z-index: 1;
+        border: 1px solid var(--arch-border);
+    }
+    .dept-filter-pill {
+        padding: 0.35rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        border: 1px solid var(--arch-border);
+        color: var(--arch-text-muted);
+        background: var(--arch-card-bg);
+        transition: all 0.2s ease;
+    }
+    .dept-filter-pill.active {
+        background: var(--arch-blue-primary);
+        border-color: var(--arch-blue-primary);
+        color: #ffffff;
+    }
+    .dept-filter-pill:hover:not(.active) {
+        border-color: var(--arch-blue-primary);
+        color: var(--arch-blue-primary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 class="page-title"><i class="bi bi-geo-alt-fill" style="color: var(--arch-blue-primary);"></i> Attendance & Location Tracking Radar</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem; margin-top: 0.25rem;">
+            Company-wide departmental check-in logging, real-time GPS coordinate tracing, and shift roster
+        </p>
+    </div>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <a href="{{ url_for('gps.index') }}" class="btn btn-outline btn-sm"><i class="bi bi-crosshair"></i> Full GPS Radar</a>
+        <a href="{{ url_for('hr.request_leave') }}" class="btn btn-primary btn-sm"><i class="bi bi-calendar-plus"></i> Apply for Leave</a>
+    </div>
+</div>
+
+<!-- My Daily Punch & Location Card -->
+<div class="card" style="background: linear-gradient(135deg, rgba(30, 80, 187, 0.06) 0%, rgba(24, 43, 92, 0.02) 100%); border-left: 4px solid var(--arch-blue-primary); margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px dashed var(--arch-border); padding-bottom: 0.75rem;">
+        <div>
+            <h3 class="card-title" style="margin: 0; font-size: 1.05rem;">My Daily Shift Record ({{ today.strftime('%A, %d %B %Y') }})</h3>
+            <span style="font-size: 0.78rem; color: var(--arch-text-muted);">{{ current_user.full_name }} &bull; <strong>{{ current_user.department }}</strong> ({{ current_user.role }})</span>
+        </div>
+        <div>
+            <span class="badge" style="background: {% if my_today_record %}rgba(16, 185, 129, 0.15); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3);{% else %}rgba(245, 158, 11, 0.15); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3);{% endif %} font-size: 0.82rem; padding: 0.35rem 0.75rem;">
+                <i class="bi {% if my_today_record %}bi-check-circle-fill{% else %}bi-hourglass-split{% endif %}"></i>
+                {% if my_today_record %}Status: {{ my_today_record.status }}{% else %}Not Checked In{% endif %}
+            </span>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.25rem; align-items: center;">
+        <div>
+            <span style="font-size: 0.75rem; color: var(--arch-text-muted); display: block; text-transform: uppercase;">Check-In Time</span>
+            <strong style="font-size: 1.15rem; color: var(--arch-text-main);">
+                {{ my_today_record.check_in_time.strftime('%I:%M %p') if my_today_record and my_today_record.check_in_time else '--:--' }}
+            </strong>
+        </div>
+        <div>
+            <span style="font-size: 0.75rem; color: var(--arch-text-muted); display: block; text-transform: uppercase;">Check-In Location</span>
+            <div style="font-size: 0.88rem; font-weight: 600; color: var(--arch-text-main); display: flex; align-items: center; gap: 0.35rem;">
+                <i class="bi bi-geo-alt-fill" style="color: #ef4444;"></i>
+                {% if my_today_record and my_today_record.check_in_location %}
+                    <span title="{{ my_today_record.check_in_location }}">{{ my_today_record.check_in_location }}</span>
+                    {% if my_today_record.latitude and my_today_record.longitude %}
+                    <a href="https://www.google.com/maps?q={{ my_today_record.latitude }},{{ my_today_record.longitude }}" target="_blank" style="color: var(--arch-blue-primary); font-size: 0.75rem;" title="View on Google Maps">
+                        <i class="bi bi-box-arrow-up-right"></i>
+                    </a>
+                    {% endif %}
+                {% else %}
+                    <span style="color: var(--arch-text-muted); font-weight: normal;">Not recorded</span>
+                {% endif %}
+            </div>
+        </div>
+        <div>
+            <span style="font-size: 0.75rem; color: var(--arch-text-muted); display: block; text-transform: uppercase;">Check-Out Time</span>
+            <strong style="font-size: 1.15rem; color: var(--arch-text-main);">
+                {{ my_today_record.check_out_time.strftime('%I:%M %p') if my_today_record and my_today_record.check_out_time else '--:--' }}
+            </strong>
+        </div>
+        <div>
+            <span style="font-size: 0.75rem; color: var(--arch-text-muted); display: block; text-transform: uppercase;">Hours / Mode</span>
+            <div style="font-size: 0.88rem; font-weight: 600;">
+                {% if my_today_record %}
+                    <span>{{ my_today_record.working_hours or 0 }} hrs</span> &bull; 
+                    <span class="badge badge-info" style="font-size: 0.72rem;">{{ my_today_record.work_mode }}</span>
+                {% else %}
+                    <span style="color: var(--arch-text-muted); font-weight: normal;">--</span>
+                {% endif %}
+            </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end;">
+            {% if not my_today_record %}
+            <button type="button" onclick="openQuickPunchModal('in')" class="btn btn-primary" style="background: #10b981; border-color: #059669; font-weight: 600; padding: 0.6rem 1.25rem;">
+                <i class="bi bi-geo-alt-fill"></i> Check In with GPS
+            </button>
+            {% elif not my_today_record.check_out_time %}
+            <button type="button" onclick="openQuickPunchModal('out')" class="btn btn-outline" style="color: var(--arch-danger); border-color: var(--arch-danger); font-weight: 600; padding: 0.6rem 1.25rem;">
+                <i class="bi bi-box-arrow-right"></i> Check Out & Log Location
+            </button>
+            {% else %}
+            <div style="text-align: right;">
+                <span class="badge badge-success" style="font-size: 0.9rem; padding: 0.45rem 1rem;"><i class="bi bi-check2-all"></i> Shift Completed</span>
+                <small style="display: block; color: var(--arch-text-muted); margin-top: 0.25rem;">Total: {{ my_today_record.working_hours }} hours</small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{# ==================== AUTHORIZED DEPARTMENT LIVE MONITOR ==================== #}
+{% if is_authorized %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem;">
+        <div>
+            <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="bi bi-radar" style="color: var(--arch-blue-primary);"></i> Department Check-Ins & Location Radar
+            </h3>
+            <span style="font-size: 0.78rem; color: var(--arch-text-muted);">
+                Authorized access for {% if current_user.is_management() %}Super Admin & Management{% elif current_user.is_hr() %}Human Resources{% else %}{{ current_user.department }} Manager{% endif %}
+            </span>
+        </div>
+        
+        <!-- Department Filter Tabs -->
+        {% if current_user.is_management() or current_user.is_hr() %}
+        <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+            <a href="{{ url_for('hr.attendance', department='All') }}" class="dept-filter-pill {% if selected_dept == 'All' %}active{% endif %}">
+                All ({{ all_today_punches|length }})
+            </a>
+            <a href="{{ url_for('hr.attendance', department='Sales') }}" class="dept-filter-pill {% if selected_dept == 'Sales' %}active{% endif %}">
+                <i class="bi bi-funnel"></i> Sales ({{ dept_counts.get('Sales', 0) }})
+            </a>
+            <a href="{{ url_for('hr.attendance', department='Field Operations') }}" class="dept-filter-pill {% if selected_dept == 'Field Operations' %}active{% endif %}">
+                <i class="bi bi-geo"></i> Field Ops ({{ dept_counts.get('Field Operations', 0) }})
+            </a>
+            <a href="{{ url_for('hr.attendance', department='Finance') }}" class="dept-filter-pill {% if selected_dept == 'Finance' %}active{% endif %}">
+                <i class="bi bi-cash-stack"></i> Finance ({{ dept_counts.get('Finance', 0) }})
+            </a>
+            <a href="{{ url_for('hr.attendance', department='Human Resources') }}" class="dept-filter-pill {% if selected_dept == 'Human Resources' %}active{% endif %}">
+                <i class="bi bi-people"></i> HR ({{ dept_counts.get('Human Resources', 0) }})
+            </a>
+            <a href="{{ url_for('hr.attendance', department='Marketing') }}" class="dept-filter-pill {% if selected_dept == 'Marketing' or selected_dept == 'Information Technology' %}active{% endif %}">
+                <i class="bi bi-cpu"></i> Marketing & IT ({{ (dept_counts.get('Marketing', 0) + dept_counts.get('Information Technology', 0)) }})
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Live Map Container -->
+    <div style="margin-bottom: 1.5rem;">
+        <div id="attendance-map"></div>
+    </div>
+
+    <!-- Real-time Staff Check-in Records Table -->
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th>Department & Role</th>
+                    <th>Check In</th>
+                    <th>Traced GPS Location</th>
+                    <th>Check Out</th>
+                    <th>Mode</th>
+                    <th>Hours</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for att in team_records %}
+                <tr>
+                    <td>
+                        <strong>{{ att.user.full_name }}</strong><br>
+                        <small style="color: var(--arch-text-muted); font-family: monospace;">{{ att.user.employee_code or att.user.username }}</small>
+                    </td>
+                    <td>
+                        <span class="badge" style="background: rgba(30, 80, 187, 0.1); color: var(--arch-blue-primary); font-size: 0.72rem;">{{ att.user.department }}</span>
+                        <small style="display: block; color: var(--arch-text-muted); margin-top: 2px;">{{ att.user.role }}</small>
+                    </td>
+                    <td>
+                        <strong>{{ att.check_in_time.strftime('%I:%M %p') if att.check_in_time else '-' }}</strong>
+                    </td>
+                    <td>
+                        {% if att.check_in_location %}
+                        <div style="display: flex; align-items: center; gap: 0.4rem;">
+                            <i class="bi bi-geo-alt-fill" style="color: #ef4444;"></i>
+                            <span>{{ att.check_in_location }}</span>
+                            {% if att.latitude and att.longitude %}
+                            <a href="https://www.google.com/maps?q={{ att.latitude }},{{ att.longitude }}" target="_blank" style="color: var(--arch-blue-primary);" title="Open Map: {{ att.latitude }}, {{ att.longitude }}">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% if att.latitude and att.longitude %}
+                        <small style="color: var(--arch-text-muted); font-family: monospace; display: block; font-size: 0.7rem;">
+                            {{ '{:.4f}'.format(att.latitude) }}, {{ '{:.4f}'.format(att.longitude) }}
+                        </small>
+                        {% endif %}
+                        {% else %}
+                        <span style="color: var(--arch-text-muted); font-size: 0.78rem;">Office / Web (No GPS)</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ att.check_out_time.strftime('%I:%M %p') if att.check_out_time else '--:--' }}
+                    </td>
+                    <td>
+                        <span class="badge badge-info">{{ att.work_mode }}</span>
+                    </td>
+                    <td>
+                        <strong>{{ att.working_hours or 0 }} hrs</strong>
+                    </td>
+                    <td>
+                        <span class="badge {% if att.check_out_time %}badge-info{% elif att.status == 'Field Duty' %}badge-warning{% else %}badge-success{% endif %}">
+                            {% if att.check_out_time %}Shift Done{% else %}{{ att.status }}{% endif %}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; color: var(--arch-text-muted); padding: 3rem;">
+                        <i class="bi bi-person-x" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
+                        No check-ins recorded today for {% if selected_dept != 'All' %}the {{ selected_dept }} department{% else %}any department{% endif %}.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="grid-cols-2">
+    <!-- Attendance History -->
+    <div class="card" style="padding: 0;">
+        <div style="padding: 1rem; border-bottom: 1px solid var(--arch-border); font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
+            <span><i class="bi bi-clock-history"></i> My Attendance & Location History</span>
+            <small style="color: var(--arch-text-muted);">Last 30 records</small>
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>In / Out</th>
+                        <th>Location Traced</th>
+                        <th>Hours</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in my_history %}
+                    <tr>
+                        <td><strong>{{ a.attendance_date.strftime('%d %b %Y') if a.attendance_date else '-' }}</strong></td>
+                        <td>
+                            {{ a.check_in_time.strftime('%I:%M %p') if a.check_in_time else '-' }}
+                            {% if a.check_out_time %}&rarr; {{ a.check_out_time.strftime('%I:%M %p') }}{% endif %}
+                        </td>
+                        <td>
+                            {% if a.check_in_location %}
+                            <i class="bi bi-geo-alt" style="color: #ef4444;"></i> {{ a.check_in_location }}
+                            {% else %}
+                            <span style="color: var(--arch-text-muted);">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ a.working_hours or 0 }} hrs</td>
+                        <td><span class="badge badge-success">{{ a.status }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--arch-text-muted);">No attendance history found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Leave Requests -->
+    <div class="card" style="padding: 0;">
+        <div style="padding: 1rem; border-bottom: 1px solid var(--arch-border); font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
+            <span><i class="bi bi-calendar-check"></i> Leave Applications</span>
+            <a href="{{ url_for('hr.request_leave') }}" class="btn btn-outline btn-sm">+ Apply</a>
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Dates</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for l in leave_requests %}
+                    <tr>
+                        <td><strong>{{ l.leave_type }}</strong></td>
+                        <td>{{ l.start_date.strftime('%d %b') if l.start_date else '' }} to {{ l.end_date.strftime('%d %b %Y') if l.end_date else '' }}</td>
+                        <td><small>{{ l.reason }}</small></td>
+                        <td>
+                            <span class="badge {% if l.status == 'Approved' %}badge-success{% elif l.status == 'Rejected' %}badge-danger{% else %}badge-warning{% endif %}">
+                                {{ l.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--arch-text-muted);">No leave requests submitted.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    {% if is_authorized %}
+    var mapEl = document.getElementById('attendance-map');
+    if (mapEl) {
+        var map = L.map('attendance-map').setView([23.0225, 72.5714], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors • ARCH Realty GPS'
+        }).addTo(map);
+
+        var staffPins = [
+            {% for att in team_records %}
+            {% if att.latitude and att.longitude %}
+            {
+                name: "{{ att.user.full_name }}",
+                dept: "{{ att.user.department }}",
+                role: "{{ att.user.role }}",
+                time: "{{ att.check_in_time.strftime('%I:%M %p') if att.check_in_time else '' }}",
+                loc: "{{ att.check_in_location or 'Ahmedabad' }}",
+                lat: {{ att.latitude }},
+                lng: {{ att.longitude }},
+                mode: "{{ att.work_mode }}"
+            },
+            {% endif %}
+            {% endfor %}
+        ];
+
+        var bounds = [];
+        staffPins.forEach(function(p) {
+            var marker = L.marker([p.lat, p.lng]).addTo(map);
+            marker.bindPopup(
+                "<div style='font-size: 0.85rem;'>" +
+                "<strong>" + p.name + "</strong> (" + p.dept + ")<br>" +
+                "<small style='color: #64748b;'>" + p.role + "</small><br>" +
+                "<hr style='margin: 4px 0; border: none; border-top: 1px solid #e2e8f0;'>" +
+                "📍 <strong>" + p.loc + "</strong><br>" +
+                "🕒 In: " + p.time + " &bull; <span class='badge badge-info'>" + p.mode + "</span>" +
+                "</div>"
+            );
+            bounds.push([p.lat, p.lng]);
+        });
+
+        if (bounds.length > 0) {
+            map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+        }
+    }
+    {% endif %}
+});
+</script>
+{% endblock %}

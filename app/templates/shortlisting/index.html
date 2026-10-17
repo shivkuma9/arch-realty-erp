@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Client Property Shortlisting Board - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div>
+        <h1 class="page-title"><i class="bi bi-card-checklist text-primary"></i> Client Property Shortlisting Tracker</h1>
+        <p class="page-subtitle text-muted">6-Stage operational pipeline: Track property presentations, shortlists, meetings, and finalizations per client.</p>
+    </div>
+    <div style="display: flex; gap: 12px; align-items: center;">
+        <!-- Client Filter Dropdown -->
+        <form method="GET" style="display: flex; gap: 8px;">
+            <select name="client_id" class="form-control" onchange="this.form.submit()" style="min-width: 260px;">
+                <option value="">-- All Active Clients --</option>
+                {% for c in clients %}
+                <option value="{{ c.id }}" {% if selected_client and selected_client.id == c.id %}selected{% endif %}>
+                    {{ c.client_code }} - {{ c.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </form>
+
+        <button type="button" class="btn btn-primary" onclick="document.getElementById('add-shortlist-modal').style.display='flex'">
+            <i class="bi bi-plus-circle-fill"></i> Shortlist Property
+        </button>
+    </div>
+</div>
+
+<!-- 6-Stage Kanban Board Container -->
+<div style="display: grid; grid-template-columns: repeat(6, minmax(260px, 1fr)); gap: 16px; overflow-x: auto; padding-bottom: 20px;">
+    
+    {% set stages_config = [
+        ('Yet to Show', 'bi-hourglass-top', '#64748b', '#f8fafc', '#e2e8f0'),
+        ('Proposed', 'bi-send-fill', '#3b82f6', '#eff6ff', '#bfdbfe'),
+        ('Shortlisted', 'bi-star-fill', '#8b5cf6', '#f5f3ff', '#ddd6fe'),
+        ('Meeting Scheduled', 'bi-calendar-check-fill', '#f59e0b', '#fffbeb', '#fde68a'),
+        ('Finalized', 'bi-check-circle-fill', '#10b981', '#ecfdf5', '#a7f3d0'),
+        ('Dropped', 'bi-x-circle-fill', '#ef4444', '#fef2f2', '#fecaca')
+    ] %}
+
+    {% for stage_name, stage_icon, stage_color, col_bg, col_border in stages_config %}
+    <div class="kanban-column" style="background: {{ col_bg }}; border: 1px solid {{ col_border }}; border-radius: 8px; display: flex; flex-direction: column; min-height: 600px;">
+        <!-- Column Header -->
+        <div style="padding: 14px 16px; border-bottom: 2px solid {{ stage_color }}; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="bi {{ stage_icon }}" style="color: {{ stage_color }};"></i>
+                <h3 style="font-size: 0.9rem; font-weight: 700; margin: 0; color: #1e293b;">{{ stage_name }}</h3>
+            </div>
+            <span class="badge" style="background: {{ stage_color }}; color: #ffffff; padding: 2px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 600;">
+                {{ stage_buckets[stage_name]|length }}
+            </span>
+        </div>
+
+        <!-- Cards List -->
+        <div style="padding: 12px; display: flex; flex-direction: column; gap: 12px; flex: 1; overflow-y: auto;">
+            {% for item in stage_buckets[stage_name] %}
+            <div class="shortlist-card" style="background: #ffffff; border: 1px solid var(--arch-border); border-radius: 6px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <!-- Property Title & Code -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                    <a href="{{ url_for('properties.detail', property_id=item.property_id) }}" style="font-weight: 600; font-size: 0.88rem; color: #1e293b; text-decoration: none;">
+                        {{ item.property.title }}
+                    </a>
+                </div>
+                <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">
+                    <i class="bi bi-geo-alt"></i> {{ item.property.locality }} &bull; {{ item.property.category }}
+                </div>
+
+                <!-- Client Info -->
+                <div style="background: #f1f5f9; padding: 6px 10px; border-radius: 4px; font-size: 0.78rem; margin-bottom: 8px;">
+                    <i class="bi bi-person-fill text-muted"></i> <strong>{{ item.client.name }}</strong>
+                    <span style="color: #64748b; display: block; font-size: 0.72rem;">{{ item.client.client_code }} &bull; {{ item.client.phone }}</span>
+                </div>
+
+                <!-- Pricing & Area -->
+                <div style="display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 600; color: #334155; margin-bottom: 10px;">
+                    <span>{{ item.property.carpet_area or 0 }} sq.ft</span>
+                    <span style="color: #059669;">₹ {{ '{:,.2f}'.format(item.property.sale_price or item.property.rent_price or 0) }}</span>
+                </div>
+
+                {% if item.notes %}
+                <div style="font-size: 0.72rem; color: #475569; margin-bottom: 10px; font-style: italic;">
+                    "{{ item.notes }}"
+                </div>
+                {% endif %}
+
+                <!-- Stage Move Action -->
+                <div style="border-top: 1px solid #f1f5f9; padding-top: 8px;">
+                    <form method="POST" action="{{ url_for('shortlisting.update_stage', shortlist_id=item.id) }}" style="display: flex; gap: 4px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <select name="stage" class="form-control" style="font-size: 0.75rem; padding: 4px 6px;" onchange="this.form.submit()">
+                            {% for target_stage in ['Yet to Show', 'Proposed', 'Shortlisted', 'Meeting Scheduled', 'Finalized', 'Dropped'] %}
+                            <option value="{{ target_stage }}" {% if item.stage == target_stage %}selected{% endif %}>
+                                Move: {{ target_stage }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 24px 8px; color: #94a3b8; font-size: 0.8rem;">
+                No properties in this stage
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+</div>
+
+<!-- Modal: Add New Property to Shortlist -->
+<div id="add-shortlist-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
+    <div style="background: #ffffff; border-radius: 8px; max-width: 540px; width: 90%; padding: 28px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--arch-border); padding-bottom: 12px;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0;"><i class="bi bi-card-checklist text-primary"></i> Add Property to Client Shortlist</h3>
+            <button type="button" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #64748b;" onclick="document.getElementById('add-shortlist-modal').style.display='none'">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('shortlisting.create_shortlist') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 6px;">Select Client *</label>
+                <select name="client_id" class="form-control" required>
+                    <option value="">-- Choose Client --</option>
+                    {% for c in clients %}
+                    <option value="{{ c.id }}">{{ c.client_code }} - {{ c.name }} ({{ c.phone }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 6px;">Select Property *</label>
+                <select name="property_id" class="form-control" required>
+                    <option value="">-- Choose Property Listing --</option>
+                    {% for p in properties %}
+                    <option value="{{ p.id }}">{{ p.property_code }} - {{ p.title }} ({{ p.locality }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 6px;">Initial Stage</label>
+                <select name="stage" class="form-control">
+                    <option value="Yet to Show">Yet to Show</option>
+                    <option value="Proposed">Proposed</option>
+                    <option value="Shortlisted" selected>Shortlisted</option>
+                    <option value="Meeting Scheduled">Meeting Scheduled</option>
+                    <option value="Finalized">Finalized</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 6px;">Client Feedback / Presentation Notes</label>
+                <textarea name="notes" class="form-control" rows="3" placeholder="Client preferred corner unit, requested floor plan, shared via WhatsApp, etc."></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('add-shortlist-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check2"></i> Add to Tracker</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

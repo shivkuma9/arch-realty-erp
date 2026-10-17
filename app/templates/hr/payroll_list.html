@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Payroll & Salary Disbursement - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Monthly Payroll & Salary Ledger</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">
+            Compensation processing, performance incentives, statutory deductions, and bank payouts
+        </p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <span class="badge badge-info" style="font-size: 0.85rem; padding: 0.5rem 1rem;">Confidential - Accounts & HR</span>
+    </div>
+</div>
+
+<div class="card" style="padding: 0;">
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th>Payroll Month</th>
+                    <th>Basic CTC</th>
+                    <th>Allowances</th>
+                    <th>Deal Incentives</th>
+                    <th>Deductions</th>
+                    <th>Net Payout</th>
+                    <th>Payment Status</th>
+                    <th>Disbursement Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in payrolls %}
+                <tr>
+                    <td>
+                        <strong>{{ p.user.full_name }}</strong><br>
+                        <small style="color: var(--arch-text-muted);">{{ p.user.employee_code or '' }} | {{ p.user.department }} ({{ p.user.role }})</small>
+                    </td>
+                    <td><strong>{{ p.month_year }}</strong></td>
+                    <td>{{ p.basic_salary | inr }}</td>
+                    <td>{{ p.allowances | inr }}</td>
+                    <td style="color: var(--arch-success); font-weight: 600;">+ {{ p.incentives | inr }}</td>
+                    <td style="color: var(--arch-danger);">- {{ p.deductions | inr }}</td>
+                    <td><strong style="color: var(--arch-blue-primary); font-size: 1.05rem;">{{ p.net_salary | inr }}</strong></td>
+                    <td>
+                        <span class="badge {% if p.payment_status == 'Paid' %}badge-success{% elif p.payment_status == 'Approved' %}badge-info{% else %}badge-warning{% endif %}">
+                            {{ p.payment_status }}
+                        </span>
+                    </td>
+                    <td>{{ p.payment_date or '-' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 2.5rem; color: var(--arch-text-muted);">
+                        No payroll cycles generated yet. Salaries and incentives will appear here.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

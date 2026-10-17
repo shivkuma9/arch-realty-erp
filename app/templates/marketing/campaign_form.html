@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}{% if campaign %}Edit Campaign {{ campaign.campaign_code }}{% else %}Launch Digital Campaign{% endif %} - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{% if campaign %}Edit Campaign &bull; {{ campaign.campaign_code }}{% else %}Launch Digital Marketing Campaign{% endif %}</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Configure targeting, budget, platform and UTM tracking tags</p>
+    </div>
+    <a href="{{ url_for('marketing.campaigns_list') }}" class="btn btn-outline btn-sm"><i class="bi bi-arrow-left"></i> Back to Campaigns</a>
+</div>
+
+<div class="card" style="max-width: 800px; margin: 0 auto; padding: 2rem;">
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+            <label class="form-label" style="font-weight: 600;">Campaign Name *</label>
+            <input type="text" name="name" class="form-control" value="{{ campaign.name if campaign else '' }}" placeholder="e.g. Q1 SG Highway Commercial IT Hub Ad Campaign" required>
+        </div>
+
+        <div class="grid-cols-2" style="gap: 1rem; margin-bottom: 1.25rem;">
+            <div class="form-group">
+                <label class="form-label" style="font-weight: 600;">Platform / Network *</label>
+                <select name="platform" class="form-control" required>
+                    {% for p in ['Google Ads', 'Meta (Instagram/FB)', '99acres', 'Magicbricks', 'LinkedIn Ads', 'WhatsApp Broadcast'] %}
+                    <option value="{{ p }}" {% if campaign and campaign.platform == p %}selected{% endif %}>{{ p }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" style="font-weight: 600;">Target Audience Profile</label>
+                <input type="text" name="target_audience" class="form-control" value="{{ campaign.target_audience if campaign else '' }}" placeholder="e.g. Tech Founders, HNW Investors, Corporate CXOs">
+            </div>
+        </div>
+
+        <div class="grid-cols-2" style="gap: 1rem; margin-bottom: 1.25rem;">
+            <div class="form-group">
+                <label class="form-label" style="font-weight: 600;">Budget (INR) *</label>
+                <input type="number" step="0.01" name="budget" class="form-control" value="{{ campaign.budget if campaign else '50000' }}" required>
+            </div>
+
+            {% if campaign %}
+            <div class="form-group">
+                <label class="form-label" style="font-weight: 600;">Amount Spent So Far (INR)</label>
+                <input type="number" step="0.01" name="spent_amount" class="form-control" value="{{ campaign.spent_amount }}">
+            </div>
+            {% else %}
+            <div class="form-group">
+                <label class="form-label" style="font-weight: 600;">Start Date</label>
+                <input type="date" name="start_date" class="form-control" value="{{ now_date or '' }}">
+            </div>
+            {% endif %}
+        </div>
+
+        {% if campaign %}
+        <div class="grid-cols-4" style="gap: 1rem; margin-bottom: 1.25rem; background: var(--arch-bg-main); padding: 1rem; border-radius: 6px;">
+            <div class="form-group">
+                <label class="form-label" style="font-size: 0.8rem;">Impressions</label>
+                <input type="number" name="impressions" class="form-control" value="{{ campaign.impressions }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label" style="font-size: 0.8rem;">Clicks</label>
+                <input type="number" name="clicks" class="form-control" value="{{ campaign.clicks }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label" style="font-size: 0.8rem;">Leads Generated</label>
+                <input type="number" name="leads_generated" class="form-control" value="{{ campaign.leads_generated }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label" style="font-size: 0.8rem;">Status</label>
+                <select name="status" class="form-control">
+                    {% for s in ['Active', 'Paused', 'Scheduled', 'Completed'] %}
+                    <option value="{{ s }}" {% if campaign.status == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="grid-cols-2" style="gap: 1rem; margin-bottom: 1.25rem;">
+            <div class="form-group">
+                <label class="form-label" style="font-weight: 600;">UTM Source Tag</label>
+                <input type="text" name="utm_source" class="form-control" value="{{ campaign.utm_source if campaign else 'google' }}" placeholder="e.g. google, instagram, 99acres">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" style="font-weight: 600;">UTM Campaign Tag</label>
+                <input type="text" name="utm_campaign" class="form-control" value="{{ campaign.utm_campaign if campaign else 'sghighway_commercial_q1' }}" placeholder="e.g. bodakdev_skyvillas">
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+            <label class="form-label" style="font-weight: 600;">Target Landing Page URL</label>
+            <input type="url" name="landing_page_url" class="form-control" value="{{ campaign.landing_page_url if campaign else 'https://archrealty.in/commercial-offices' }}" placeholder="https://...">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label class="form-label" style="font-weight: 600;">Campaign Strategic Notes / Ad Copy Draft</label>
+            <textarea name="notes" class="form-control" rows="3" placeholder="Key USPs highlighted: Grade-A LEED certified, 100% power backup, prime highway visibility...">{{ campaign.notes if campaign else '' }}</textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+            <a href="{{ url_for('marketing.campaigns_list') }}" class="btn btn-outline">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg"></i> {% if campaign %}Save Changes{% else %}Launch Campaign{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Owner Mandates - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Mandates & Exclusivity Agreements</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Sole selling, semi-exclusive, and open broker authorization records</p>
+    </div>
+    <a href="{{ url_for('properties.create_mandate') }}" class="btn btn-primary btn-sm">+ Record New Mandate</a>
+</div>
+
+<div class="card" style="padding: 0;">
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Mandate Code</th>
+                    <th>Owner</th>
+                    <th>Type</th>
+                    <th>Asking Consideration</th>
+                    <th>Validity Period</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in mandates %}
+                <tr>
+                    <td><strong>{{ m.mandate_code }}</strong></td>
+                    <td>{{ m.owner.name }}</td>
+                    <td><span class="badge badge-primary">{{ m.mandate_type }}</span></td>
+                    <td>{{ (m.asking_price or m.asking_rent) | inr }}</td>
+                    <td>{{ m.start_date }} to {{ m.expiry_date }}</td>
+                    <td>
+                        <span class="badge {% if m.status == 'Active' %}badge-success{% else %}badge-warning{% endif %}">{{ m.status }}</span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--arch-text-muted);">No mandate agreements recorded yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

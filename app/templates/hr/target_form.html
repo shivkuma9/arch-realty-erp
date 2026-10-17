@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <div>
+            <h2 class="card-title" style="margin: 0;">{{ title }}</h2>
+            <p style="color: var(--arch-gray-600); font-size: 0.85rem; margin-top: 0.25rem;">
+                Set monthly calls, inquiries, site visits, and revenue targets for sales & BDE personnel.
+            </p>
+        </div>
+        <span class="badge badge-primary">Target Allocation</span>
+    </div>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.user_id.label.text }} *</label>
+                {{ form.user_id(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.month_year.label.text }} *</label>
+                {{ form.month_year(class="form-control", placeholder="e.g. October 2026") }}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">{{ form.working_days.label.text }} *</label>
+            {{ form.working_days(class="form-control", placeholder="e.g. 25") }}
+        </div>
+
+        <div style="margin-top: 1.5rem; margin-bottom: 0.75rem; border-top: 1px solid var(--arch-border); padding-top: 1rem;">
+            <h3 style="font-size: 1rem; font-weight: 600; color: var(--arch-blue-primary);">Operational Activity Goals (Target vs Actual)</h3>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.call_target.label.text }} *</label>
+                {{ form.call_target(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.actual_calls.label.text }}</label>
+                {{ form.actual_calls(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.lead_target.label.text }} *</label>
+                {{ form.lead_target(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.actual_leads.label.text }}</label>
+                {{ form.actual_leads(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.site_visit_target.label.text }} *</label>
+                {{ form.site_visit_target(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.actual_site_visits.label.text }}</label>
+                {{ form.actual_site_visits(class="form-control") }}
+            </div>
+        </div>
+
+        <div style="margin-top: 1.5rem; margin-bottom: 0.75rem; border-top: 1px solid var(--arch-border); padding-top: 1rem;">
+            <h3 style="font-size: 1rem; font-weight: 600; color: var(--arch-blue-primary);">Financial Brokerage Achievement (₹)</h3>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.revenue_target.label.text }}</label>
+                {{ form.revenue_target(class="form-control", placeholder="₹ Brokerage Goal") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.actual_revenue.label.text }}</label>
+                {{ form.actual_revenue(class="form-control", placeholder="₹ Realized") }}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">{{ form.notes.label.text }}</label>
+            {{ form.notes(class="form-control", rows=3, placeholder="Manager feedback, key accounts focus, or strategy...") }}
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary">Save Target Allocation</button>
+            <a href="{{ url_for('hr.targets_list') }}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

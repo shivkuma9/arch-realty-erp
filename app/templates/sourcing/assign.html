@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Assign Sourcing Task - ARCH Realty{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <div class="page-header" style="margin-bottom: 24px;">
+        <a href="{{ url_for('sourcing.index') }}" class="btn btn-sm btn-outline" style="margin-bottom: 12px; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="bi bi-arrow-left"></i> Back to Sourcing Hub
+        </a>
+        <h1 class="page-title"><i class="bi bi-plus-circle text-primary"></i> Assign Sourcing Task</h1>
+        <p class="page-subtitle text-muted">Create a Lead-Wise or Targeted Area assignment for the sourcing & field acquisition team.</p>
+    </div>
+
+    <div class="card" style="background: var(--arch-card-bg); border-radius: 8px; border: 1px solid var(--arch-border); padding: 28px;">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px;">Sourcing Type *</label>
+                <div style="display: flex; gap: 24px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="radio" name="sourcing_type" value="Lead-Wise" {% if sourcing_type != 'Targeted Area' %}checked{% endif %}>
+                        <span><strong>Lead-Wise Sourcing</strong> (Scout specifically for an active lead or client requirement)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="radio" name="sourcing_type" value="Targeted Area" {% if sourcing_type == 'Targeted Area' %}checked{% endif %}>
+                        <span><strong>Targeted Area Scouting</strong> (Build inventory in a high-demand locality)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px;">Assignment Title *</label>
+                <input type="text" name="title" class="form-control" placeholder="e.g. 5,000 sq.ft Furnished Office in SG Highway for MNC Client" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Link Lead (Optional)</label>
+                    <select name="lead_id" class="form-control">
+                        <option value="">-- None / General --</option>
+                        {% for l in leads %}
+                        <option value="{{ l.id }}" {% if selected_lead and selected_lead.id == l.id %}selected{% endif %}>
+                            {{ l.lead_code }} - {{ l.full_name }} ({{ l.preferred_locations or 'Any' }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Link Client (Optional)</label>
+                    <select name="client_id" class="form-control">
+                        <option value="">-- None / General --</option>
+                        {% for c in clients %}
+                        <option value="{{ c.id }}">{{ c.client_code }} - {{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Target Locality / Area *</label>
+                    <input type="text" name="locality" class="form-control" placeholder="e.g. SG Highway, Prahlad Nagar, Changodar, Sindhu Bhavan Road" required>
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Property Category</label>
+                    <select name="category" class="form-control">
+                        <option value="Commercial">Commercial (Office / Retail)</option>
+                        <option value="Industrial">Industrial (Warehouse / Factory)</option>
+                        <option value="Land & Plot">Land & Plot</option>
+                        <option value="Pre-Leased">Pre-Leased / ROI Asset</option>
+                        <option value="Residential">Residential</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Min Area (Sq.Ft)</label>
+                    <input type="number" step="any" name="min_area_sqft" class="form-control" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Max Area (Sq.Ft)</label>
+                    <input type="number" step="any" name="max_area_sqft" class="form-control" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Target Budget (₹)</label>
+                    <input type="number" step="any" name="target_budget" class="form-control" placeholder="0">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Assign To Executive *</label>
+                    <select name="assigned_to_id" class="form-control" required>
+                        <option value="">-- Select Executive --</option>
+                        {% for u in users %}
+                        <option value="{{ u.id }}">{{ u.full_name }} ({{ u.role }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Priority</label>
+                    <select name="priority" class="form-control">
+                        <option value="High">High</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="Low">Low</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Due Date</label>
+                    <input type="date" name="due_date" class="form-control">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px;">Detailed Sourcing Instructions / Notes</label>
+                <textarea name="instructions" class="form-control" rows="4" placeholder="Mention key specifications: e.g. Grade A building, min 10 car parks, cafeteria nearby, clear height 28ft, 3-phase power, etc."></textarea>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <a href="{{ url_for('sourcing.index') }}" class="btn btn-outline">Cancel</a>
+                <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">
+                    <i class="bi bi-check2-circle"></i> Create Sourcing Assignment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Employee Directory - ARCH Realty HRMS{% endblock %}
+
+{% block content %}
+<div class="workspace-header">
+  <div class="workspace-title">
+    <h1><i class="bi bi-people-fill" style="color: var(--brand-primary);"></i> Employee Master Directory</h1>
+    <p>Complete record of ARCH REALTY corporate staff, departments, roles & status</p>
+  </div>
+  <div class="btn-group-custom">
+    <a href="{{ url_for('hr.hr_dashboard') }}" class="btn-secondary-hr"><i class="bi bi-speedometer2"></i> Command Center</a>
+    {% if current_user.has_role(Roles.SUPER_ADMIN, Roles.DIRECTOR) %}
+    <a href="{{ url_for('settings.create_user') }}" class="btn-primary-hr"><i class="bi bi-person-plus"></i> + Add Employee</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card-container">
+  <!-- Table Toolbar -->
+  <form method="GET" action="{{ url_for('hr.employees_list') }}" class="table-toolbar">
+    <i class="bi bi-search" style="color: var(--text-secondary);"></i>
+    <input type="text" name="search" placeholder="Filter by Name, ID, Role, Email..." value="{{ search_query }}" style="flex: 1; min-width: 200px;">
+    
+    <select name="department" onchange="this.form.submit()">
+      <option value="All" {% if current_department == 'All' %}selected{% endif %}>All Departments</option>
+      {% for d in departments if d != 'All' %}
+      <option value="{{ d }}" {% if current_department == d %}selected{% endif %}>{{ d }}</option>
+      {% endfor %}
+    </select>
+
+    <select name="status" onchange="this.form.submit()">
+      <option value="All" {% if current_status == 'All' %}selected{% endif %}>All Statuses</option>
+      <option value="Active" {% if current_status == 'Active' %}selected{% endif %}>Active</option>
+      <option value="Probation" {% if current_status == 'Probation' %}selected{% endif %}>Probation</option>
+      <option value="Notice Period" {% if current_status == 'Notice Period' %}selected{% endif %}>Notice Period</option>
+      <option value="Exited" {% if current_status == 'Exited' %}selected{% endif %}>Exited</option>
+    </select>
+
+    <button type="submit" class="btn-primary-hr btn-sm-hr">Filter</button>
+    <a href="{{ url_for('hr.employees_list') }}" class="btn-secondary-hr btn-sm-hr" title="Reset Filters"><i class="bi bi-x-circle"></i> Clear</a>
+  </form>
+
+  <!-- Table -->
+  <table class="hr-table">
+    <thead>
+      <tr>
+        <th>Emp ID</th>
+        <th>Full Name</th>
+        <th>Department & Role</th>
+        <th>Location</th>
+        <th>Contact Info</th>
+        <th>Employment Status</th>
+        <th style="text-align: right;">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in employees %}
+      <tr>
+        <td><b>{{ e.employee_code or 'EMP-' ~ e.id }}</b></td>
+        <td>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="avatar-hr">{{ e.full_name[0] }}</div>
+            <div>
+              <a href="{{ url_for('hr.employee_profile', user_id=e.id) }}" style="font-weight: 600; color: var(--text-primary); text-decoration: none;">
+                {{ e.full_name }}
+              </a>
+              <div style="font-size: 10px; color: var(--text-secondary);">{{ e.email }}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <b>{{ e.department }}</b><br>
+          <span style="color: var(--text-secondary); font-size: 11px;">{{ e.role }}</span>
+        </td>
+        <td><i class="bi bi-geo-alt" style="color: var(--text-secondary);"></i> {{ e.location or 'Ahmedabad HQ' }}</td>
+        <td>
+          <div><i class="bi bi-telephone" style="color: var(--text-secondary);"></i> {{ e.phone or 'Not set' }}</div>
+        </td>
+        <td>
+          {% if e.emp_status == 'Active' or not e.emp_status %}
+            <span class="badge-hr badge-active"><i class="bi bi-check-circle-fill"></i> Active</span>
+          {% elif e.emp_status == 'Probation' %}
+            <span class="badge-hr badge-probation"><i class="bi bi-hourglass-split"></i> Probation</span>
+          {% elif e.emp_status == 'Notice Period' %}
+            <span class="badge-hr badge-notice"><i class="bi bi-box-arrow-right"></i> Notice Period</span>
+          {% else %}
+            <span class="badge-hr badge-pending">{{ e.emp_status }}</span>
+          {% endif %}
+        </td>
+        <td style="text-align: right;">
+          <a href="{{ url_for('hr.employee_profile', user_id=e.id) }}" class="btn-primary-hr btn-sm-hr">
+            View Profile
+          </a>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 30px;">
+          No staff members found matching specified search criteria.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

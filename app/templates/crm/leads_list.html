@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}CRM Leads - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Lead Management</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Track, qualify, and convert buyer & tenant prospects in Ahmedabad</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{{ url_for('crm.export_leads_csv') }}" class="btn btn-outline btn-sm">Export CSV</a>
+        <a href="{{ url_for('crm.lead_create') }}" class="btn btn-primary btn-sm">+ Create New Lead</a>
+    </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="card" style="padding: 1rem; margin-bottom: 1.25rem;">
+    <form method="GET" style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+        <input type="text" name="search" value="{{ search }}" placeholder="Search name, phone, code..." class="form-control" style="width: 220px;">
+        
+        <select name="status" class="form-control" style="width: 150px;">
+            <option value="">All Statuses</option>
+            {% for s in ['New', 'Contacted', 'Qualified', 'Site Visit', 'Negotiation', 'Won', 'Lost'] %}
+            <option value="{{ s }}" {% if status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="category" class="form-control" style="width: 150px;">
+            <option value="">All Categories</option>
+            {% for c in ['Commercial', 'Residential', 'Industrial', 'Land', 'Pre-Leased'] %}
+            <option value="{{ c }}" {% if category == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+        </select>
+
+        {% if current_user.is_management() and executives %}
+        <select name="executive_id" class="form-control" style="width: 180px;">
+            <option value="">All Executives</option>
+            {% for ex in executives %}
+            <option value="{{ ex.id }}" {% if executive_id == ex.id %}selected{% endif %}>{{ ex.full_name }}</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+
+        <button type="submit" class="btn btn-outline btn-sm">Filter</button>
+        <a href="{{ url_for('crm.leads_list') }}" class="btn btn-outline btn-sm" style="color: var(--arch-text-muted);">Reset</a>
+    </form>
+</div>
+
+<!-- Leads Data Table -->
+<div class="card" style="padding: 0;">
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Lead Code</th>
+                    <th>Prospect</th>
+                    <th>Category & Req</th>
+                    <th>Budget Range</th>
+                    <th>Preferred Area</th>
+                    <th>Assigned To</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lead in pagination.items %}
+                <tr>
+                    <td><a href="{{ url_for('crm.lead_detail', lead_id=lead.id) }}"><strong>{{ lead.lead_code }}</strong></a></td>
+                    <td>
+                        <strong>{{ lead.full_name }}</strong><br>
+                        <small style="color: var(--arch-text-muted);">{{ lead.phone }} {% if lead.company_name %}• {{ lead.company_name }}{% endif %}</small>
+                    </td>
+                    <td>
+                        {{ lead.property_category }}<br>
+                        <small class="badge badge-secondary">{{ lead.transaction_type }}</small>
+                    </td>
+                    <td>
+                        {% if lead.budget_max > 0 %}
+                        {{ lead.budget_min | inr }} - {{ lead.budget_max | inr }}
+                        {% else %}
+                        <span style="color: var(--arch-text-muted);">Flexible</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ lead.preferred_locations or 'Ahmedabad (Any)' }}</td>
+                    <td>{{ lead.assigned_to.full_name if lead.assigned_to else '<span style="color: orange;">Unassigned</span>' | safe }}</td>
+                    <td>
+                        {% if lead.status == 'Won' %}
+                        <span class="badge badge-success">{{ lead.status }}</span>
+                        {% elif lead.status == 'Lost' %}
+                        <span class="badge badge-danger">{{ lead.status }}</span>
+                        {% elif lead.status == 'New' %}
+                        <span class="badge badge-primary">{{ lead.status }}</span>
+                        {% else %}
+                        <span class="badge badge-warning">{{ lead.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 0.35rem;">
+                            <a href="{{ url_for('crm.lead_detail', lead_id=lead.id) }}" class="btn btn-outline btn-sm">View</a>
+                            <a href="{{ url_for('crm.lead_edit', lead_id=lead.id) }}" class="btn btn-outline btn-sm">Edit</a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" style="text-align: center; padding: 2.5rem; color: var(--arch-text-muted);">No matching leads found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem;">
+        <span style="font-size: 0.8rem; color: var(--arch-text-muted);">Showing page {{ pagination.page }} of {{ pagination.pages }} (Total {{ pagination.total }} records)</span>
+        <div style="display: flex; gap: 0.4rem;">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('crm.leads_list', page=pagination.prev_num, search=search, status=status, category=category) }}" class="btn btn-outline btn-sm">Previous</a>
+            {% endif %}
+            {% if pagination.has_next %}
+            <a href="{{ url_for('crm.leads_list', page=pagination.next_num, search=search, status=status, category=category) }}" class="btn btn-outline btn-sm">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Property Approval Queue - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div>
+        <h1 class="page-title"><i class="bi bi-patch-check-fill text-primary"></i> Property Approval Workflow</h1>
+        <p class="page-subtitle text-muted">Admin & Management verification queue: Review employee submissions, photos, video tours, and approve for public inventory.</p>
+    </div>
+    <div style="display: flex; gap: 12px;">
+        <a href="{{ url_for('properties.submit_property') }}" class="btn btn-primary">
+            <i class="bi bi-cloud-arrow-up-fill"></i> New Submission
+        </a>
+    </div>
+</div>
+
+<!-- Approval Status Metrics -->
+<div class="metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div class="metric-card" style="background: var(--arch-card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--arch-border);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--arch-muted); font-size: 0.85rem; font-weight: 500;">Pending Verification</span>
+            <i class="bi bi-hourglass-split" style="font-size: 1.25rem; color: #f59e0b;"></i>
+        </div>
+        <div style="font-size: 1.75rem; font-weight: 700; margin-top: 8px; color: #f59e0b;">{{ pending_count }}</div>
+    </div>
+    <div class="metric-card" style="background: var(--arch-card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--arch-border);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--arch-muted); font-size: 0.85rem; font-weight: 500;">Approved Inventory</span>
+            <i class="bi bi-check-circle-fill" style="font-size: 1.25rem; color: #10b981;"></i>
+        </div>
+        <div style="font-size: 1.75rem; font-weight: 700; margin-top: 8px; color: #10b981;">{{ approved_count }}</div>
+    </div>
+    <div class="metric-card" style="background: var(--arch-card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--arch-border);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--arch-muted); font-size: 0.85rem; font-weight: 500;">Rejected Listings</span>
+            <i class="bi bi-x-circle-fill" style="font-size: 1.25rem; color: #ef4444;"></i>
+        </div>
+        <div style="font-size: 1.75rem; font-weight: 700; margin-top: 8px; color: #ef4444;">{{ rejected_count }}</div>
+    </div>
+</div>
+
+<!-- Filter Tabs -->
+<div class="card" style="background: var(--arch-card-bg); border-radius: 8px; border: 1px solid var(--arch-border); padding: 20px;">
+    <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--arch-border); padding-bottom: 16px; margin-bottom: 20px;">
+        <a href="{{ url_for('properties.approvals', status='Pending Approval') }}" class="btn btn-sm {% if status_filter == 'Pending Approval' %}btn-primary{% else %}btn-outline{% endif %}">
+            <i class="bi bi-hourglass"></i> Pending Approval ({{ pending_count }})
+        </a>
+        <a href="{{ url_for('properties.approvals', status='Approved') }}" class="btn btn-sm {% if status_filter == 'Approved' %}btn-primary{% else %}btn-outline{% endif %}">
+            <i class="bi bi-check2"></i> Approved ({{ approved_count }})
+        </a>
+        <a href="{{ url_for('properties.approvals', status='Rejected') }}" class="btn btn-sm {% if status_filter == 'Rejected' %}btn-primary{% else %}btn-outline{% endif %}">
+            <i class="bi bi-x-lg"></i> Rejected ({{ rejected_count }})
+        </a>
+        <a href="{{ url_for('properties.approvals', status='All') }}" class="btn btn-sm {% if status_filter == 'All' %}btn-primary{% else %}btn-outline{% endif %}">
+            All Listings
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--arch-border); text-align: left; color: var(--arch-muted); font-size: 0.8rem; text-transform: uppercase;">
+                    <th style="padding: 12px 16px;">Property Code</th>
+                    <th style="padding: 12px 16px;">Title & Micro-Market</th>
+                    <th style="padding: 12px 16px;">Category / Type</th>
+                    <th style="padding: 12px 16px;">Carpet Area</th>
+                    <th style="padding: 12px 16px;">Expected Price / Rent</th>
+                    <th style="padding: 12px 16px;">Submitted By</th>
+                    <th style="padding: 12px 16px;">Media / Tour</th>
+                    <th style="padding: 12px 16px;">Status</th>
+                    <th style="padding: 12px 16px; text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in properties %}
+                <tr style="border-bottom: 1px solid var(--arch-border); font-size: 0.88rem;">
+                    <td style="padding: 14px 16px; font-weight: 600;">
+                        <a href="{{ url_for('properties.detail', property_id=p.id) }}" style="color: #4361ee; text-decoration: none;">
+                            {{ p.property_code }}
+                        </a>
+                    </td>
+                    <td style="padding: 14px 16px;">
+                        <div style="font-weight: 600;">{{ p.title }}</div>
+                        <div style="font-size: 0.78rem; color: var(--arch-muted);">
+                            <i class="bi bi-geo-alt"></i> {{ p.locality }}, {{ p.city }}
+                        </div>
+                    </td>
+                    <td style="padding: 14px 16px;">
+                        <div>{{ p.category }}</div>
+                        <span style="font-size: 0.75rem; color: var(--arch-muted);">{{ p.transaction_type }}</span>
+                    </td>
+                    <td style="padding: 14px 16px;">{{ p.carpet_area or 0 }} sq.ft</td>
+                    <td style="padding: 14px 16px; font-weight: 600; color: #059669;">
+                        ₹ {{ '{:,.2f}'.format(p.sale_price or p.rent_price or 0) }}
+                    </td>
+                    <td style="padding: 14px 16px;">
+                        {% if p.submitted_by %}
+                        <span>{{ p.submitted_by.full_name }}</span>
+                        <span style="font-size: 0.72rem; color: var(--arch-muted); display: block;">{{ p.submitted_by.role }}</span>
+                        {% else %}
+                        <span class="text-muted">Direct / Admin</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 14px 16px;">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            {% if p.video_url %}
+                            <a href="{{ p.video_url }}" target="_blank" class="btn btn-sm btn-outline" style="padding: 2px 6px; font-size: 0.75rem; color: #ef4444;" title="View Walkthrough Video">
+                                <i class="bi bi-play-circle-fill"></i> Video
+                            </a>
+                            {% endif %}
+                            {% if p.images|length > 0 %}
+                            <span class="badge" style="background: #e0e7ff; color: #3730a3; padding: 2px 6px; font-size: 0.75rem;">
+                                <i class="bi bi-image"></i> {{ p.images|length }} photos
+                            </span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td style="padding: 14px 16px;">
+                        <span class="badge" style="background: {% if p.approval_status == 'Approved' %}#d1fae5; color: #065f46;{% elif p.approval_status == 'Rejected' %}#fee2e2; color: #991b1b;{% else %}#fef3c7; color: #92400e;{% endif %} padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;">
+                            {{ p.approval_status or 'Approved' }}
+                        </span>
+                    </td>
+                    <td style="padding: 14px 16px; text-align: right;">
+                        <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                            <a href="{{ url_for('properties.detail', property_id=p.id) }}" class="btn btn-sm btn-outline" title="Review Full Property Details">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            {% if p.approval_status != 'Approved' %}
+                            <form method="POST" action="{{ url_for('properties.approve_property', property_id=p.id) }}" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-primary" title="Approve & Publish to Inventory" style="background: #059669; border-color: #059669;">
+                                    <i class="bi bi-check-lg"></i> Approve
+                                </button>
+                            </form>
+                            {% endif %}
+                            {% if p.approval_status != 'Rejected' %}
+                            <form method="POST" action="{{ url_for('properties.reject_property', property_id=p.id) }}" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline" title="Reject Listing" style="color: #dc2626; border-color: #dc2626;">
+                                    <i class="bi bi-x-lg"></i> Reject
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 40px; color: var(--arch-muted);">
+                        <i class="bi bi-patch-check" style="font-size: 2rem; display: block; margin-bottom: 8px;"></i>
+                        No properties in the {{ status_filter }} queue.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}{{ assignment.sourcing_code }} - Sourcing Task Detail{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+    <a href="{{ url_for('sourcing.index') }}" class="btn btn-sm btn-outline" style="margin-bottom: 12px; display: inline-flex; align-items: center; gap: 6px;">
+        <i class="bi bi-arrow-left"></i> Back to Sourcing Hub
+    </a>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <h1 class="page-title" style="margin: 0;">{{ assignment.title }}</h1>
+                <span class="badge" style="background: #e0e7ff; color: #3730a3; padding: 4px 8px; border-radius: 4px;">{{ assignment.sourcing_code }}</span>
+                <span class="badge" style="background: {% if assignment.status == 'Completed' %}#d1fae5; color: #065f46;{% else %}#dbeafe; color: #1e40af;{% endif %} padding: 4px 8px; border-radius: 4px;">{{ assignment.status }}</span>
+            </div>
+            <p class="text-muted" style="margin-top: 6px;">
+                Type: <strong>{{ assignment.sourcing_type }}</strong> &bull; Target Locality: <strong>{{ assignment.locality }}</strong> &bull; Priority: <strong>{{ assignment.priority }}</strong>
+            </p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <a href="{{ url_for('sourcing.submit_property_for_assignment', assignment_id=assignment.id) }}" class="btn btn-primary">
+                <i class="bi bi-building-add"></i> Submit Sourced Property
+            </a>
+            {% if (current_user.is_admin() or current_user.is_manager()) and assignment.status != 'Completed' %}
+            <form method="POST" action="{{ url_for('sourcing.update_status', assignment_id=assignment.id) }}" style="display: inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="status" value="Completed">
+                <button type="submit" class="btn btn-outline" style="color: #059669; border-color: #059669;">
+                    <i class="bi bi-check2-all"></i> Mark Completed
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+    <!-- Left Column: Specs & Submissions -->
+    <div>
+        <!-- Scope Card -->
+        <div class="card" style="background: var(--arch-card-bg); border-radius: 8px; border: 1px solid var(--arch-border); padding: 24px; margin-bottom: 24px;">
+            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; border-bottom: 1px solid var(--arch-border); padding-bottom: 10px;">
+                <i class="bi bi-card-text text-primary"></i> Requirement Parameters
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px;">
+                <div>
+                    <span style="font-size: 0.78rem; color: var(--arch-muted); display: block;">Locality</span>
+                    <strong>{{ assignment.locality }}</strong>
+                </div>
+                <div>
+                    <span style="font-size: 0.78rem; color: var(--arch-muted); display: block;">Category</span>
+                    <strong>{{ assignment.category or 'Any' }}</strong>
+                </div>
+                <div>
+                    <span style="font-size: 0.78rem; color: var(--arch-muted); display: block;">Area Range</span>
+                    <strong>{{ assignment.min_area_sqft or 0 }} - {{ assignment.max_area_sqft or 'Any' }} sq.ft</strong>
+                </div>
+                <div>
+                    <span style="font-size: 0.78rem; color: var(--arch-muted); display: block;">Target Budget</span>
+                    <strong>₹ {{ '{:,.2f}'.format(assignment.target_budget) if assignment.target_budget else 'Flexible' }}</strong>
+                </div>
+                <div>
+                    <span style="font-size: 0.78rem; color: var(--arch-muted); display: block;">Assigned Executive</span>
+                    <strong>{{ assignment.assigned_to.full_name if assignment.assigned_to else 'Unassigned' }}</strong>
+                </div>
+                <div>
+                    <span style="font-size: 0.78rem; color: var(--arch-muted); display: block;">Due Date</span>
+                    <strong>{{ assignment.due_date.strftime('%d %b %Y') if assignment.due_date else 'Flexible' }}</strong>
+                </div>
+            </div>
+            {% if assignment.instructions %}
+            <div style="background: var(--arch-bg); padding: 14px; border-radius: 6px; border-left: 4px solid #4361ee; font-size: 0.88rem;">
+                <strong>Instructions:</strong> {{ assignment.instructions }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sourced Properties / Submissions Card -->
+        <div class="card" style="background: var(--arch-card-bg); border-radius: 8px; border: 1px solid var(--arch-border); padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--arch-border); padding-bottom: 10px;">
+                <h3 style="font-size: 1.1rem; font-weight: 600; margin: 0;">
+                    <i class="bi bi-building-check text-primary"></i> Properties Sourced & Submitted ({{ assignment.submissions|length }})
+                </h3>
+                <a href="{{ url_for('sourcing.submit_property_for_assignment', assignment_id=assignment.id) }}" class="btn btn-sm btn-outline">
+                    <i class="bi bi-plus-lg"></i> Add Property
+                </a>
+            </div>
+
+            {% if assignment.submissions %}
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+                {% for sub in assignment.submissions %}
+                <div style="border: 1px solid var(--arch-border); border-radius: 6px; padding: 16px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <h4 style="margin: 0; font-size: 0.95rem; font-weight: 600;">{{ sub.property_title }}</h4>
+                            <span class="badge" style="background: {% if sub.status == 'Approved' %}#d1fae5; color: #065f46;{% elif sub.status == 'Rejected' %}#fee2e2; color: #991b1b;{% else %}#fef3c7; color: #92400e;{% endif %} padding: 2px 6px; border-radius: 4px; font-size: 0.72rem;">
+                                {{ sub.status }}
+                            </span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--arch-muted); margin-top: 4px;">
+                            <i class="bi bi-geo-alt"></i> {{ sub.locality }} &bull; Area: {{ sub.carpet_area or 0 }} sq.ft &bull; Price/Rent: ₹ {{ '{:,.2f}'.format(sub.expected_price_or_rent) if sub.expected_price_or_rent else 'Negotiable' }}
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--arch-muted); margin-top: 4px;">
+                            Owner: {{ sub.owner_name or 'N/A' }} ({{ sub.owner_contact or 'N/A' }}) &bull; Sourced by: {{ sub.employee.full_name if sub.employee else 'Unknown' }} on {{ sub.created_at.strftime('%d %b %Y') if sub.created_at else '' }}
+                        </div>
+                        {% if sub.admin_feedback %}
+                        <div style="margin-top: 6px; font-size: 0.78rem; color: #b45309; background: #fffbeb; padding: 4px 8px; border-radius: 4px;">
+                            Feedback: {{ sub.admin_feedback }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {% if sub.property_id %}
+                        <a href="{{ url_for('properties.detail', property_id=sub.property_id) }}" class="btn btn-sm btn-outline">
+                            <i class="bi bi-box-arrow-up-right"></i> View Property
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 30px; color: var(--arch-muted);">
+                <i class="bi bi-inbox" style="font-size: 2rem; display: block; margin-bottom: 8px;"></i>
+                No properties submitted yet for this assignment. Click "Submit Sourced Property" to record an option.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right Column: Context Information -->
+    <div>
+        {% if assignment.lead %}
+        <div class="card" style="background: var(--arch-card-bg); border-radius: 8px; border: 1px solid var(--arch-border); padding: 20px; margin-bottom: 20px;">
+            <h4 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--arch-border); padding-bottom: 8px;">
+                <i class="bi bi-funnel text-primary"></i> Linked Lead
+            </h4>
+            <div style="font-size: 0.88rem;">
+                <div style="font-weight: 600;">{{ assignment.lead.full_name }}</div>
+                <div style="color: var(--arch-muted); font-size: 0.8rem;">Code: {{ assignment.lead.lead_code }}</div>
+                <div style="margin-top: 8px;"><i class="bi bi-telephone"></i> {{ assignment.lead.phone }}</div>
+                <div><i class="bi bi-building"></i> {{ assignment.lead.company_name or 'Individual' }}</div>
+                <div style="margin-top: 12px;">
+                    <a href="{{ url_for('crm.lead_detail', lead_id=assignment.lead.id) }}" class="btn btn-sm btn-outline" style="width: 100%;">
+                        View Full Lead Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% elif assignment.client %}
+        <div class="card" style="background: var(--arch-card-bg); border-radius: 8px; border: 1px solid var(--arch-border); padding: 20px; margin-bottom: 20px;">
+            <h4 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--arch-border); padding-bottom: 8px;">
+                <i class="bi bi-person text-primary"></i> Linked Client
+            </h4>
+            <div style="font-size: 0.88rem;">
+                <div style="font-weight: 600;">{{ assignment.client.name }}</div>
+                <div style="color: var(--arch-muted); font-size: 0.8rem;">Code: {{ assignment.client.client_code }}</div>
+                <div style="margin-top: 8px;"><i class="bi bi-telephone"></i> {{ assignment.client.phone }}</div>
+                <div style="margin-top: 12px;">
+                    <a href="{{ url_for('crm.client_detail', client_id=assignment.client.id) }}" class="btn btn-sm btn-outline" style="width: 100%;">
+                        View Client Details
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card" style="background: var(--arch-card-bg); border-radius: 8px; border: 1px solid var(--arch-border); padding: 20px;">
+            <h4 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; border-bottom: 1px solid var(--arch-border); padding-bottom: 8px;">
+                <i class="bi bi-info-circle text-primary"></i> Assignment Meta
+            </h4>
+            <div style="font-size: 0.82rem; color: var(--arch-muted); display: flex; flex-direction: column; gap: 8px;">
+                <div>Created: <strong>{{ assignment.created_at.strftime('%d %b %Y, %H:%M') if assignment.created_at else 'N/A' }}</strong></div>
+                <div>Assigned By: <strong>{{ assignment.assigned_by.full_name if assignment.assigned_by else 'System' }}</strong></div>
+                <div>Status: <strong>{{ assignment.status }}</strong></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

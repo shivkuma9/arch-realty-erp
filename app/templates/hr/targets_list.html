@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}BDE & Sales Performance Targets - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">BDE & Sales KPI Target Tracker</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">
+            Monthly operational goals vs actual performance for Business Development & Sales Executives
+        </p>
+    </div>
+    {% if current_user.is_management() or current_user.is_hr() %}
+    <div>
+        <a href="{{ url_for('hr.create_target') }}" class="btn btn-primary btn-sm">+ Allocate Monthly Target</a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card" style="padding: 0;">
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Executive</th>
+                    <th>Month</th>
+                    <th>Working Days</th>
+                    <th>Calls (Target / Actual)</th>
+                    <th>Leads (Target / Actual)</th>
+                    <th>Site Visits (Target / Actual)</th>
+                    <th>Revenue Target</th>
+                    <th>Actual Revenue</th>
+                    <th>Achievement</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in targets %}
+                <tr>
+                    <td>
+                        <strong>{{ t.user.full_name }}</strong><br>
+                        <small style="color: var(--arch-text-muted);">{{ t.user.employee_code or '' }} | {{ t.user.role }}</small>
+                    </td>
+                    <td><strong>{{ t.month_year }}</strong></td>
+                    <td>{{ t.working_days }} days</td>
+                    <td>
+                        <span style="font-weight: 600;">{{ t.actual_calls }}</span> / {{ t.call_target }}
+                        {% if t.call_target > 0 %}
+                        <div style="width: 100%; background: #e2e8f0; height: 5px; border-radius: 3px; margin-top: 3px;">
+                            <div style="background: var(--arch-blue-primary); height: 100%; border-radius: 3px; width: {{ [(t.actual_calls / t.call_target * 100)|round|int, 100]|min }}%;"></div>
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span style="font-weight: 600;">{{ t.actual_leads }}</span> / {{ t.lead_target }}
+                        {% if t.lead_target > 0 %}
+                        <div style="width: 100%; background: #e2e8f0; height: 5px; border-radius: 3px; margin-top: 3px;">
+                            <div style="background: var(--arch-accent); height: 100%; border-radius: 3px; width: {{ [(t.actual_leads / t.lead_target * 100)|round|int, 100]|min }}%;"></div>
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span style="font-weight: 600;">{{ t.actual_site_visits }}</span> / {{ t.site_visit_target }}
+                        {% if t.site_visit_target > 0 %}
+                        <div style="width: 100%; background: #e2e8f0; height: 5px; border-radius: 3px; margin-top: 3px;">
+                            <div style="background: var(--arch-success); height: 100%; border-radius: 3px; width: {{ [(t.actual_site_visits / t.site_visit_target * 100)|round|int, 100]|min }}%;"></div>
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>{{ t.revenue_target | inr }}</td>
+                    <td style="color: var(--arch-success); font-weight: 600;">{{ t.actual_revenue | inr }}</td>
+                    <td>
+                        {% if t.revenue_target and t.revenue_target > 0 %}
+                            {% set pct = ((t.actual_revenue / t.revenue_target) * 100)|round|int %}
+                            <span class="badge {% if pct >= 100 %}badge-success{% elif pct >= 70 %}badge-info{% else %}badge-warning{% endif %}">
+                                {{ pct }}%
+                            </span>
+                        {% else %}
+                            <span class="badge badge-secondary">In Progress</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 2.5rem; color: var(--arch-text-muted);">
+                        No performance targets allocated yet. Click '+ Allocate Monthly Target' above.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

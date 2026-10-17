@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Sourcing Management Hub - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div>
+        <h1 class="page-title"><i class="bi bi-crosshair text-primary"></i> Sourcing & Acquisition Hub</h1>
+        <p class="page-subtitle text-muted">Manage lead-wise requirements, targeted locality scouting, and field executive submissions.</p>
+    </div>
+    <div style="display: flex; gap: 12px;">
+        <a href="{{ url_for('sourcing.assign_sourcing') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle-fill"></i> New Sourcing Assignment
+        </a>
+        <a href="{{ url_for('reports.export_report_csv', report_type='sourcing') }}" class="btn btn-outline">
+            <i class="bi bi-download"></i> Export Sourcing (CSV)
+        </a>
+    </div>
+</div>
+
+<!-- Sourcing Metric KPI Cards -->
+<div class="metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div class="metric-card" style="background: var(--arch-card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--arch-border);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--arch-muted); font-size: 0.85rem; font-weight: 500;">Total Assignments</span>
+            <i class="bi bi-folder2-open" style="font-size: 1.25rem; color: #4361ee;"></i>
+        </div>
+        <div style="font-size: 1.75rem; font-weight: 700; margin-top: 8px; color: var(--arch-text);">{{ assignments|length }}</div>
+    </div>
+    <div class="metric-card" style="background: var(--arch-card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--arch-border);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--arch-muted); font-size: 0.85rem; font-weight: 500;">Active / In Progress</span>
+            <i class="bi bi-lightning-charge-fill" style="font-size: 1.25rem; color: #3b82f6;"></i>
+        </div>
+        <div style="font-size: 1.75rem; font-weight: 700; margin-top: 8px; color: #3b82f6;">{{ active_count }}</div>
+    </div>
+    <div class="metric-card" style="background: var(--arch-card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--arch-border);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--arch-muted); font-size: 0.85rem; font-weight: 500;">Completed Sourcing</span>
+            <i class="bi bi-check-circle-fill" style="font-size: 1.25rem; color: #10b981;"></i>
+        </div>
+        <div style="font-size: 1.75rem; font-weight: 700; margin-top: 8px; color: #10b981;">{{ completed_count }}</div>
+    </div>
+    <div class="metric-card" style="background: var(--arch-card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--arch-border);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--arch-muted); font-size: 0.85rem; font-weight: 500;">Total Properties Sourced</span>
+            <i class="bi bi-building-check" style="font-size: 1.25rem; color: #8b5cf6;"></i>
+        </div>
+        <div style="font-size: 1.75rem; font-weight: 700; margin-top: 8px; color: #8b5cf6;">{{ submissions_count }}</div>
+    </div>
+</div>
+
+<!-- Sourcing Filters & List -->
+<div class="card" style="background: var(--arch-card-bg); border-radius: 8px; border: 1px solid var(--arch-border); padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--arch-border); padding-bottom: 16px; margin-bottom: 20px;">
+        <div style="display: flex; gap: 8px;">
+            <a href="{{ url_for('sourcing.index', type='all') }}" class="btn btn-sm {% if type_filter == 'all' or not type_filter %}btn-primary{% else %}btn-outline{% endif %}">All Types</a>
+            <a href="{{ url_for('sourcing.index', type='Lead-Wise') }}" class="btn btn-sm {% if type_filter == 'Lead-Wise' %}btn-primary{% else %}btn-outline{% endif %}">Lead-Wise Sourcing</a>
+            <a href="{{ url_for('sourcing.index', type='Targeted Area') }}" class="btn btn-sm {% if type_filter == 'Targeted Area' %}btn-primary{% else %}btn-outline{% endif %}">Targeted Locality Scouting</a>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <a href="{{ url_for('sourcing.index', status='Active', type=type_filter) }}" class="btn btn-sm {% if status_filter == 'Active' %}btn-secondary{% else %}btn-outline{% endif %}">Active</a>
+            <a href="{{ url_for('sourcing.index', status='Pending', type=type_filter) }}" class="btn btn-sm {% if status_filter == 'Pending' %}btn-secondary{% else %}btn-outline{% endif %}">Pending</a>
+            <a href="{{ url_for('sourcing.index', status='Completed', type=type_filter) }}" class="btn btn-sm {% if status_filter == 'Completed' %}btn-secondary{% else %}btn-outline{% endif %}">Completed</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--arch-border); text-align: left; color: var(--arch-muted); font-size: 0.8rem; text-transform: uppercase;">
+                    <th style="padding: 12px 16px;">Sourcing Code</th>
+                    <th style="padding: 12px 16px;">Title & Scope</th>
+                    <th style="padding: 12px 16px;">Type</th>
+                    <th style="padding: 12px 16px;">Locality / Area</th>
+                    <th style="padding: 12px 16px;">Assigned To</th>
+                    <th style="padding: 12px 16px;">Priority</th>
+                    <th style="padding: 12px 16px;">Submissions</th>
+                    <th style="padding: 12px 16px;">Status</th>
+                    <th style="padding: 12px 16px;">Due Date</th>
+                    <th style="padding: 12px 16px; text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in assignments %}
+                <tr style="border-bottom: 1px solid var(--arch-border); font-size: 0.88rem;">
+                    <td style="padding: 14px 16px; font-weight: 600;">
+                        <a href="{{ url_for('sourcing.detail', assignment_id=a.id) }}" style="color: #4361ee; text-decoration: none;">
+                            {{ a.sourcing_code }}
+                        </a>
+                    </td>
+                    <td style="padding: 14px 16px;">
+                        <div style="font-weight: 600; color: var(--arch-text);">{{ a.title }}</div>
+                        {% if a.lead %}
+                        <div style="font-size: 0.75rem; color: var(--arch-muted);"><i class="bi bi-funnel"></i> Lead: {{ a.lead.full_name }} ({{ a.lead.lead_code }})</div>
+                        {% elif a.client %}
+                        <div style="font-size: 0.75rem; color: var(--arch-muted);"><i class="bi bi-person"></i> Client: {{ a.client.name }}</div>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 14px 16px;">
+                        <span class="badge" style="background: {% if a.sourcing_type == 'Lead-Wise' %}#e0e7ff; color: #3730a3;{% else %}#fef3c7; color: #92400e;{% endif %} padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;">
+                            {{ a.sourcing_type }}
+                        </span>
+                    </td>
+                    <td style="padding: 14px 16px;">
+                        <i class="bi bi-geo-alt"></i> {{ a.locality }}
+                    </td>
+                    <td style="padding: 14px 16px;">
+                        {% if a.assigned_to %}
+                        <span style="font-weight: 500;">{{ a.assigned_to.full_name }}</span>
+                        {% else %}
+                        <span class="text-muted">Unassigned</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 14px 16px;">
+                        <span class="badge" style="background: {% if a.priority == 'High' %}#fee2e2; color: #991b1b;{% elif a.priority == 'Medium' %}#fef3c7; color: #92400e;{% else %}#ecfdf5; color: #065f46;{% endif %} padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;">
+                            {{ a.priority }}
+                        </span>
+                    </td>
+                    <td style="padding: 14px 16px;">
+                        <span class="badge" style="background: #ede9fe; color: #5b21b6; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;">
+                            {{ a.submissions|length }} properties
+                        </span>
+                    </td>
+                    <td style="padding: 14px 16px;">
+                        <span class="badge" style="background: {% if a.status == 'Completed' %}#d1fae5; color: #065f46;{% elif a.status == 'Active' %}#dbeafe; color: #1e40af;{% else %}#f3f4f6; color: #4b5563;{% endif %} padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;">
+                            {{ a.status }}
+                        </span>
+                    </td>
+                    <td style="padding: 14px 16px; color: var(--arch-muted);">
+                        {{ a.due_date.strftime('%d %b %Y') if a.due_date else 'No Deadline' }}
+                    </td>
+                    <td style="padding: 14px 16px; text-align: right;">
+                        <a href="{{ url_for('sourcing.detail', assignment_id=a.id) }}" class="btn btn-sm btn-outline">
+                            <i class="bi bi-eye"></i> View
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="10" style="text-align: center; padding: 40px; color: var(--arch-muted);">
+                        <i class="bi bi-inbox" style="font-size: 2rem; display: block; margin-bottom: 12px;"></i>
+                        No sourcing assignments found matching your filter criteria.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

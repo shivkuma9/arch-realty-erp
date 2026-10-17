@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Digital Marketing & Growth - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Digital Marketing & Growth Command Center</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Ad campaign management, multi-channel lead generation, budget allocation and CPL analytics</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{{ url_for('marketing.attribution') }}" class="btn btn-outline btn-sm"><i class="bi bi-pie-chart-fill"></i> Channel Attribution</a>
+        <a href="{{ url_for('marketing.create_campaign') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Launch Campaign</a>
+    </div>
+</div>
+
+<!-- Primary Marketing KPIs -->
+<div class="grid-cols-4">
+    <div class="kpi-card" style="border-left: 4px solid #0ea5e9;">
+        <div class="kpi-header">
+            <span class="kpi-label">Active Campaigns</span>
+            <div class="kpi-icon-wrap" style="color: #0ea5e9;"><i class="bi bi-megaphone-fill"></i></div>
+        </div>
+        <span class="kpi-value">{{ active_campaigns }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-broadcast"></i> {{ total_campaigns }} Total In Market</span>
+    </div>
+
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-blue-primary);">
+        <div class="kpi-header">
+            <span class="kpi-label">Total Ad Spend</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-blue-primary);"><i class="bi bi-cash-stack"></i></div>
+        </div>
+        <span class="kpi-value" style="font-size: 1.4rem;">{{ total_spent | inr }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-wallet2"></i> Budget: {{ total_budget | inr }}</span>
+    </div>
+
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-success);">
+        <div class="kpi-header">
+            <span class="kpi-label">Total Inbound Leads</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-success);"><i class="bi bi-funnel-fill"></i></div>
+        </div>
+        <span class="kpi-value" style="color: var(--arch-success);">{{ total_leads }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-arrow-up-right-circle"></i> Direct Conversions</span>
+    </div>
+
+    <div class="kpi-card" style="border-left: 4px solid #8b5cf6;">
+        <div class="kpi-header">
+            <span class="kpi-label">Avg Cost Per Lead (CPL)</span>
+            <div class="kpi-icon-wrap" style="color: #8b5cf6;"><i class="bi bi-graph-up-arrow"></i></div>
+        </div>
+        <span class="kpi-value" style="font-size: 1.4rem;">₹ {{ avg_cpl | round(1) }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-cursor-fill"></i> CTR: {{ overall_ctr }}%</span>
+    </div>
+</div>
+
+<!-- Platforms & Recent Campaigns -->
+<div class="grid-cols-3" style="margin-top: 1.5rem;">
+    <!-- Active Campaigns Table -->
+    <div class="card" style="grid-column: span 2; padding: 0;">
+        <div style="padding: 1rem; border-bottom: 1px solid var(--arch-border); display: flex; justify-content: space-between; align-items: center;">
+            <strong style="font-size: 0.95rem;"><i class="bi bi-bullseye" style="color: #0ea5e9;"></i> Ad Campaigns & Performance</strong>
+            <a href="{{ url_for('marketing.campaigns_list') }}" class="btn btn-outline btn-sm">View All Campaigns</a>
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Campaign</th>
+                        <th>Platform</th>
+                        <th>Budget / Spend</th>
+                        <th>Leads / CPL</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in campaigns %}
+                    <tr>
+                        <td>
+                            <strong>{{ c.name }}</strong><br>
+                            <small style="color: var(--arch-text-muted);">{{ c.campaign_code }} &bull; {{ c.target_audience or 'General' }}</small>
+                        </td>
+                        <td>
+                            <span class="badge {% if 'Google' in c.platform %}badge-primary{% elif 'Meta' in c.platform %}badge-info{% elif '99acres' in c.platform or 'Magicbricks' in c.platform %}badge-warning{% else %}badge-secondary{% endif %}">
+                                {{ c.platform }}
+                            </span>
+                        </td>
+                        <td>
+                            <strong>{{ c.spent_amount | inr }}</strong><br>
+                            <small style="color: var(--arch-text-muted);">of {{ c.budget | inr }}</small>
+                        </td>
+                        <td>
+                            <span class="badge badge-success">{{ c.leads_generated }} Leads</span><br>
+                            <small style="color: var(--arch-text-muted);">₹ {{ c.cost_per_lead | round(1) }} / lead</small>
+                        </td>
+                        <td>
+                            <span class="badge {% if c.status == 'Active' %}badge-success{% elif c.status == 'Paused' %}badge-warning{% else %}badge-secondary{% endif %}">
+                                {{ c.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('marketing.edit_campaign', campaign_id=c.id) }}" class="btn btn-outline btn-sm"><i class="bi bi-pencil-square"></i></a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No campaigns created yet. Click "+ Launch Campaign" above.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Platform Breakdown Widget -->
+    <div class="card">
+        <h3 class="card-title" style="margin-bottom: 1rem;"><i class="bi bi-pie-chart-fill" style="color: var(--arch-blue-primary);"></i> Platform Ad Spend</h3>
+        <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+            {% for platform, stats in platform_stats.items() %}
+            <div style="padding: 0.75rem; border: 1px solid var(--arch-border); border-radius: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                    <strong>{{ platform }}</strong>
+                    <span class="badge badge-primary">{{ stats.count }} Ads</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--arch-text-muted);">
+                    <span>Spend: <strong>{{ stats.spent | inr }}</strong></span>
+                    <span>Leads: <strong style="color: var(--arch-success);">{{ stats.leads }}</strong></span>
+                </div>
+            </div>
+            {% else %}
+            <p style="color: var(--arch-text-muted); font-size: 0.85rem; text-align: center; padding: 2rem 0;">No platform spend data yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Recent Inbound Leads Generated -->
+<div class="card" style="padding: 0; margin-top: 1.5rem;">
+    <div style="padding: 1rem; border-bottom: 1px solid var(--arch-border); display: flex; justify-content: space-between; align-items: center;">
+        <strong style="font-size: 0.95rem;"><i class="bi bi-funnel-fill" style="color: var(--arch-success);"></i> Recent Inbound Inquiries from Marketing</strong>
+        <a href="{{ url_for('marketing.attribution') }}" class="btn btn-outline btn-sm">Full Attribution Stream</a>
+    </div>
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Date & Time</th>
+                    <th>Prospect Name</th>
+                    <th>Phone / Email</th>
+                    <th>Attributed Campaign</th>
+                    <th>Source Channel</th>
+                    <th>Preferred Category</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inq in inquiries %}
+                <tr>
+                    <td>{{ inq.inquiry_date.strftime('%d %b %Y, %I:%M %p') }}</td>
+                    <td><strong>{{ inq.prospect_name }}</strong></td>
+                    <td>
+                        <i class="bi bi-telephone"></i> {{ inq.phone }}<br>
+                        {% if inq.email %}<small style="color: var(--arch-text-muted);"><i class="bi bi-envelope"></i> {{ inq.email }}</small>{% endif %}
+                    </td>
+                    <td>{{ inq.campaign.name }}</td>
+                    <td><span class="badge badge-info">{{ inq.source_channel }}</span></td>
+                    <td><span class="badge badge-primary">{{ inq.preferred_category }}</span></td>
+                    <td><span class="badge badge-success">{{ inq.status }}</span></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No attributed campaign inquiries logged yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

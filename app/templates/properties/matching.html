@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Property Matching Engine - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Client Requirements & Property Matching</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Explainable rule-based scoring matching client budget, area, and locality preferences</p>
+    </div>
+</div>
+
+<div class="grid-cols-2">
+    <!-- Active Requirements List -->
+    <div class="card">
+        <h3 class="card-title">Select Active Requirement</h3>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            {% for req in requirements %}
+            <a href="{{ url_for('properties.matching', requirement_id=req.id) }}" style="text-decoration: none; color: inherit;">
+                <div style="padding: 0.85rem; border: 1px solid var(--arch-border); border-radius: 6px; background-color: {% if selected_req and selected_req.id == req.id %}rgba(30, 80, 187, 0.08); border-color: var(--arch-blue-primary);{% else %}var(--arch-card-bg){% endif %};">
+                    <div style="display: flex; justify-content: space-between;">
+                        <strong>{{ req.client.name }}</strong>
+                        <span class="badge badge-primary">{{ req.category }}</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--arch-text-muted); margin-top: 0.35rem;">
+                        Seeking: <strong>{{ req.transaction_type }}</strong> • Budget: <strong>{{ req.budget_max | inr }}</strong>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--arch-text-muted); margin-top: 0.2rem;">
+                        <i class="bi bi-geo-alt"></i> Locations: {{ req.preferred_locations or 'Any in Ahmedabad' }}
+                    </div>
+                </div>
+            </a>
+            {% else %}
+            <p style="color: var(--arch-text-muted); font-size: 0.85rem;">No active requirements found.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Match Results & Explainability -->
+    <div>
+        {% if selected_req %}
+        <div class="card">
+            <h3 class="card-title">
+                <span>Top Matches for {{ selected_req.client.name }}</span>
+                <span class="badge badge-info">{{ matches | length }} Matches</span>
+            </h3>
+
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                {% for m in matches %}
+                <div style="border: 1px solid var(--arch-border); border-radius: 8px; padding: 1rem; background-color: var(--arch-card-bg);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <a href="{{ url_for('properties.detail', property_id=m.property.id) }}">
+                            <strong style="font-size: 1.05rem;">{{ m.property.title }}</strong>
+                        </a>
+                        <span class="badge {% if m.match_score >= 80 %}badge-success{% elif m.match_score >= 60 %}badge-primary{% else %}badge-warning{% endif %}" style="font-size: 0.85rem;">
+                            {{ m.match_score }}% Match
+                        </span>
+                    </div>
+
+                    <p style="font-size: 0.8rem; color: var(--arch-text-muted); margin-bottom: 0.5rem;">
+                        <i class="bi bi-geo-alt"></i> {{ m.property.locality }} • {{ m.property.carpet_area }} Sq.Ft • Asking: <strong>{{ (m.property.sale_price if m.property.transaction_type == 'Sale' else m.property.rent_price) | inr }}</strong>
+                    </p>
+
+                    <!-- Match Reasons -->
+                    <div style="font-size: 0.8rem; margin-top: 0.5rem; background: rgba(16, 185, 129, 0.08); padding: 0.5rem; border-radius: 4px; color: #065f46;">
+                        <strong><i class="bi bi-check-circle-fill"></i> Match Factors:</strong> {{ m.match_reasons or 'Category & general parameters align.' }}
+                    </div>
+
+                    <!-- Mismatches / Trade-offs -->
+                    {% if m.mismatches %}
+                    <div style="font-size: 0.8rem; margin-top: 0.35rem; background: rgba(245, 158, 11, 0.08); padding: 0.5rem; border-radius: 4px; color: #92400e;">
+                        <strong><i class="bi bi-exclamation-triangle-fill"></i> Notice / Variations:</strong> {{ m.mismatches }}
+                    </div>
+                    {% endif %}
+
+                    <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem;">
+                        <a href="{{ url_for('properties.detail', property_id=m.property.id) }}" class="btn btn-outline btn-sm">View Property</a>
+                        <a href="{{ url_for('field.schedule_visit') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Schedule Visit</a>
+                    </div>
+                </div>
+                {% else %}
+                <p style="color: var(--arch-text-muted); padding: 1.5rem; text-align: center;">No properties currently match this requirement's criteria.</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="card" style="text-align: center; padding: 3rem;">
+            <p style="color: var(--arch-text-muted);">Select a requirement from the left column to run the match engine.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

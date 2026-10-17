@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Tasks & Follow-ups - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Tasks & Follow-Ups</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Action items, client meetings, and operational follow-ups</p>
+    </div>
+    <a href="{{ url_for('hr.create_task') }}" class="btn btn-primary btn-sm">+ Assign New Task</a>
+</div>
+
+<div class="card" style="padding: 0;">
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Task Title</th>
+                    <th>Assignee</th>
+                    <th>Priority</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in tasks %}
+                <tr>
+                    <td>
+                        <strong>{{ t.title }}</strong>
+                        {% if t.description %}<br><small style="color: var(--arch-text-muted);">{{ t.description }}</small>{% endif %}
+                    </td>
+                    <td>{{ t.assigned_to.full_name }}</td>
+                    <td>
+                        <span class="badge {% if t.priority == 'High' %}badge-danger{% elif t.priority == 'Medium' %}badge-warning{% else %}badge-secondary{% endif %}">
+                            {{ t.priority }}
+                        </span>
+                    </td>
+                    <td>{{ t.due_date }}</td>
+                    <td>
+                        <span class="badge {% if t.status == 'Completed' %}badge-success{% else %}badge-primary{% endif %}">
+                            {{ t.status }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if t.status != 'Completed' %}
+                        <form method="POST" action="{{ url_for('hr.complete_task', task_id=t.id) }}" style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline btn-sm" style="color: var(--arch-success);"><i class="bi bi-check-lg"></i> Mark Done</button>
+                        </form>
+                        {% else %}
+                        <span style="font-size: 0.8rem; color: var(--arch-text-muted);">Completed</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--arch-text-muted);">No active tasks assigned.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

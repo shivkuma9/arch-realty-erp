@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h2 class="card-title">{{ title }}</h2>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            <label class="form-label">{{ form.title.label.text }} *</label>
+            {{ form.title(class="form-control", placeholder="e.g. Sale of 2400 sq.ft Office to Apex Logistics") }}
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.client_id.label.text }} *</label>
+                {{ form.client_id(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.property_id.label.text }} *</label>
+                {{ form.property_id(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.stage.label.text }}</label>
+                {{ form.stage(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.owner_user_id.label.text }} *</label>
+                {{ form.owner_user_id(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.expected_value.label.text }}</label>
+                {{ form.expected_value(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.final_value.label.text }}</label>
+                {{ form.final_value(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.expected_closing_date.label.text }}</label>
+                {{ form.expected_closing_date(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.agreement_status.label.text }}</label>
+                {{ form.agreement_status(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">{{ form.notes.label.text }}</label>
+            {{ form.notes(class="form-control", rows=3) }}
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary">Save Deal</button>
+            <a href="{{ url_for('deals.index') }}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Client Directory - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Client Directory</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Corporate entities and individual investors in Ahmedabad</p>
+    </div>
+    <a href="{{ url_for('crm.client_create') }}" class="btn btn-primary btn-sm">+ Register New Client</a>
+</div>
+
+<div class="card" style="padding: 1rem; margin-bottom: 1.25rem;">
+    <form method="GET" style="display: flex; gap: 0.75rem;">
+        <input type="text" name="search" value="{{ search }}" placeholder="Search client name, company, phone..." class="form-control" style="width: 300px;">
+        <select name="type" class="form-control" style="width: 160px;">
+            <option value="">All Types</option>
+            <option value="Individual" {% if c_type == 'Individual' %}selected{% endif %}>Individual</option>
+            <option value="Corporate" {% if c_type == 'Corporate' %}selected{% endif %}>Corporate</option>
+        </select>
+        <button type="submit" class="btn btn-outline btn-sm">Filter</button>
+    </form>
+</div>
+
+<div class="card" style="padding: 0;">
+    <div class="table-responsive">
+        <table class="arch-table">
+            <thead>
+                <tr>
+                    <th>Client Code</th>
+                    <th>Name / Organization</th>
+                    <th>Type</th>
+                    <th>Phone / Email</th>
+                    <th>Preferred Locations</th>
+                    <th>Relationship Mgr</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in pagination.items %}
+                <tr>
+                    <td><a href="{{ url_for('crm.client_detail', client_id=c.id) }}"><strong>{{ c.client_code }}</strong></a></td>
+                    <td>
+                        <strong>{{ c.name }}</strong>
+                        {% if c.company_name %}<br><small style="color: var(--arch-text-muted);">{{ c.company_name }}</small>{% endif %}
+                    </td>
+                    <td><span class="badge badge-secondary">{{ c.client_type }}</span></td>
+                    <td>{{ c.phone }}<br><small style="color: var(--arch-text-muted);">{{ c.email or '-' }}</small></td>
+                    <td>{{ c.preferred_locations or 'Ahmedabad' }}</td>
+                    <td>{{ c.assigned_rm.full_name if c.assigned_rm else 'Unassigned' }}</td>
+                    <td>
+                        <a href="{{ url_for('crm.client_detail', client_id=c.id) }}" class="btn btn-outline btn-sm">View Profile</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--arch-text-muted);">No clients registered yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

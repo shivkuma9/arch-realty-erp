@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Resignations & Exit Clearance - ARCH Realty HRMS{% endblock %}
+
+{% block content %}
+<div class="workspace-header">
+  <div class="workspace-title">
+    <h1><i class="bi bi-box-arrow-right" style="color: #EF4444;"></i> Resignations & Exit Clearance Board</h1>
+    <p>Notice period tracking, multi-department handover checklist, knowledge transfer & relieving signoffs</p>
+  </div>
+  <div class="btn-group-custom">
+    <a href="{{ url_for('hr.hr_dashboard') }}" class="btn-secondary-hr"><i class="bi bi-speedometer2"></i> Command Center</a>
+    <button type="button" class="btn-danger-hr" onclick="openHrModal('newExitModal')"><i class="bi bi-person-dash"></i> + Initiate Exit</button>
+  </div>
+</div>
+
+<div class="split-grid-2">
+  {% for ex in exits %}
+  <div class="card-container" style="margin-bottom: 0;">
+    <div class="card-header-hr">
+      <div>
+        <h3 style="font-size: 14px;">{{ ex.user.full_name }}</h3>
+        <span style="font-size: 11px; color: var(--text-secondary);">{{ ex.user.role }} &bull; {{ ex.user.department }}</span>
+      </div>
+      <div>
+        {% if ex.status == 'Cleared' %}
+          <span class="badge-hr badge-verified"><i class="bi bi-check-circle-fill"></i> Cleared & Relieved</span>
+        {% else %}
+          <span class="badge-hr badge-notice"><i class="bi bi-box-arrow-right"></i> Notice Period</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="padding: 16px;">
+      <div class="form-grid-2" style="font-size: 12px; margin-bottom: 14px;">
+        <div>
+          <span style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase;">Resignation Date</span><br>
+          <b>{{ ex.resignation_date.strftime('%d %B %Y') }}</b>
+        </div>
+        <div>
+          <span style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase;">Last Working Day</span><br>
+          <b style="color: #DC2626;">{{ ex.last_working_day.strftime('%d %B %Y') }}</b>
+        </div>
+      </div>
+
+      <!-- Clearance Checklist -->
+      <div style="background: #F8FAFC; border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; margin-bottom: 14px;">
+        <span style="font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; display: block; margin-bottom: 8px;">
+          Multi-Department NOC & Handover: ({{ ex.clearance_progress }})
+        </span>
+        <div class="form-grid-2" style="font-size: 11px; row-gap: 6px;">
+          <div><i class="bi bi-check-circle-fill" style="color: #16A34A;"></i> IT Hardware Handover</div>
+          <div><i class="bi bi-check-circle-fill" style="color: #16A34A;"></i> Email / CRM Deactivation</div>
+          <div><i class="bi bi-check-circle-fill" style="color: #16A34A;"></i> Sales Portfolio Handover (KT)</div>
+          <div><i class="bi bi-check-circle-fill" style="color: #16A34A;"></i> Office ID & Keys Surrender</div>
+          <div><i class="bi bi-check-circle-fill" style="color: #16A34A;"></i> Full & Final Accounts Dues</div>
+          <div><i class="bi bi-check-circle-fill" style="color: #16A34A;"></i> Relieving Letter Issuance</div>
+        </div>
+      </div>
+
+      {% if ex.notes %}
+      <p style="font-size: 11px; color: var(--text-secondary); margin-bottom: 14px;"><em>Handover Notes: {{ ex.notes }}</em></p>
+      {% endif %}
+
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 12px;">
+        <a href="{{ url_for('hr.employee_profile', user_id=ex.user.id) }}" class="btn-secondary-hr btn-sm-hr">Profile</a>
+        <div style="display: flex; gap: 6px;">
+          {% if ex.status != 'Cleared' %}
+          <button type="button" class="btn-secondary-hr btn-sm-hr" onclick="openHrModal('updateModal{{ ex.id }}')"><i class="bi bi-pencil"></i> Checkpoint</button>
+          <form method="POST" action="{{ url_for('hr.complete_exit', id=ex.id) }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-success-hr btn-sm-hr"><i class="bi bi-check2-all"></i> Signoff Exit</button>
+          </form>
+          {% else %}
+          <span style="font-size: 11px; color: #166534; font-weight: 600;"><i class="bi bi-check-circle-fill"></i> Completed</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Update Modal -->
+  <div class="modal-overlay-hr" id="updateModal{{ ex.id }}">
+    <div class="modal-body-hr" style="text-align: left;">
+      <form method="POST" action="{{ url_for('hr.update_exit_progress', id=ex.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header-hr">
+          <h4>Update Clearance Checkpoint: {{ ex.user.full_name }}</h4>
+          <button type="button" class="modal-close-btn" onclick="closeHrModal('updateModal{{ ex.id }}')">&times;</button>
+        </div>
+        <div class="modal-content-hr">
+          <div class="form-group-hr">
+            <label>Clearance Progress Label</label>
+            <input type="text" name="clearance_progress" value="{{ ex.clearance_progress }}" required>
+          </div>
+          <div class="form-group-hr">
+            <label>Handover / KT Notes</label>
+            <textarea name="notes" rows="3">{{ ex.notes }}</textarea>
+          </div>
+        </div>
+        <div class="modal-footer-hr">
+          <button type="button" class="btn-secondary-hr" onclick="closeHrModal('updateModal{{ ex.id }}')">Cancel</button>
+          <button type="submit" class="btn-primary-hr">Save Checkpoint</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <div class="card-container" style="grid-column: span 2; padding: 40px; text-align: center; color: var(--text-secondary);">
+    <i class="bi bi-shield-check" style="color: #166534; font-size: 32px; display: block; margin-bottom: 8px;"></i>
+    No employees currently serving notice or undergoing exit clearance.
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Modal Initiate Exit -->
+<div class="modal-overlay-hr" id="newExitModal">
+  <div class="modal-body-hr">
+    <form method="POST" action="{{ url_for('hr.create_exit') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-header-hr">
+        <h4>Initiate Resignation & Exit Clearance</h4>
+        <button type="button" class="modal-close-btn" onclick="closeHrModal('newExitModal')">&times;</button>
+      </div>
+      <div class="modal-content-hr">
+        <div class="form-group-hr">
+          <label>Employee Name</label>
+          <select name="user_id" required>
+            <option value="">-- Select Employee --</option>
+            {% for u in users %}
+            <option value="{{ u.id }}">{{ u.full_name }} ({{ u.department }} - {{ u.role }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group-hr">
+          <label>Last Working Day</label>
+          <input type="date" name="last_working_day" required>
+        </div>
+        <div class="form-group-hr">
+          <label>Handover & Resignation Notes</label>
+          <textarea name="notes" rows="3" placeholder="Reason, replacement assignee, notice duration..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer-hr">
+        <button type="button" class="btn-secondary-hr" onclick="closeHrModal('newExitModal')">Cancel</button>
+        <button type="submit" class="btn-danger-hr">Register Resignation</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,1759 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - ARCH Realty{% endblock %}
+
+{% block content %}
+<style>
+    /* Executive Department Switcher Navigation */
+    .dept-tabs-nav {
+        display: flex;
+        gap: 0.5rem;
+        overflow-x: auto;
+        padding: 0.5rem;
+        background: #ffffff;
+        border: 1px solid var(--arch-border);
+        border-radius: var(--radius-lg, 10px);
+        margin-bottom: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .dept-tab-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.65rem 1rem;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--arch-text-muted);
+        font-weight: 500;
+        font-size: 0.875rem;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+    }
+    .dept-tab-btn:hover {
+        background: #f1f5f9;
+        color: var(--arch-text);
+    }
+    .dept-tab-btn.active {
+        background: var(--arch-blue-primary);
+        color: #ffffff;
+        border-color: var(--arch-blue-primary);
+        box-shadow: 0 2px 4px rgba(29, 78, 216, 0.2);
+    }
+    .dept-tab-btn.active .badge {
+        background: rgba(255, 255, 255, 0.25);
+        color: #ffffff;
+    }
+    .dept-slot-pane {
+        display: none;
+        animation: fadeIn 0.25s ease-in-out;
+    }
+    .dept-slot-pane.active {
+        display: block;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .quick-action-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.75rem;
+        background: #f8fafc;
+        border: 1px solid var(--arch-border);
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--arch-text);
+        text-decoration: none;
+        transition: all 0.15s ease;
+    }
+    .quick-action-pill:hover {
+        background: #e2e8f0;
+        color: var(--arch-blue-primary);
+        border-color: var(--arch-blue-primary);
+    }
+</style>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            {% if current_user.is_management() %}Executive Dashboard &bull; Master Command Center
+            {% elif current_user.is_accounts() %}Finance & Accounts Dashboard
+            {% elif current_user.is_hr() %}HR & Operations Dashboard
+            {% elif current_user.is_field() %}Field Operations Dashboard
+            {% elif current_user.is_marketing() or current_user.is_it() %}Digital Marketing & IT Command Center
+            {% else %}Sales & CRM Workspace{% endif %}
+        </h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem; margin-top: 0.25rem;">
+            Logged in as <strong>{{ current_user.full_name }}</strong> &bull; <span style="color: var(--arch-blue-primary); font-weight: 600;">{{ current_user.role }}</span> ({{ current_user.department }})
+        </p>
+    </div>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <a href="{{ url_for('dashboard.index', period='today') }}" class="btn {% if period == 'today' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">Today</a>
+        <a href="{{ url_for('dashboard.index', period='week') }}" class="btn {% if period == 'week' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">This Week</a>
+        <a href="{{ url_for('dashboard.index', period='month') }}" class="btn {% if period == 'month' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">This Month</a>
+        <a href="{{ url_for('dashboard.index', period='all') }}" class="btn {% if period == 'all' %}btn-primary{% else %}btn-outline{% endif %} btn-sm">All Time</a>
+    </div>
+</div>
+
+{# ==================== 1. FINANCE & ACCOUNTS DASHBOARD ==================== #}
+{% if current_user.is_accounts() and not current_user.is_management() %}
+<div class="grid-cols-4">
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-blue-primary);">
+        <div class="kpi-header">
+            <span class="kpi-label">Expected Brokerage</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-blue-primary);"><i class="bi bi-cash-stack"></i></div>
+        </div>
+        <span class="kpi-value" style="font-size: 1.4rem;">{{ expected_brokerage | inr }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-graph-up-arrow"></i> Receivables Pipeline</span>
+    </div>
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-success);">
+        <div class="kpi-header">
+            <span class="kpi-label">Realized Collections</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-success);"><i class="bi bi-check2-circle"></i></div>
+        </div>
+        <span class="kpi-value" style="font-size: 1.4rem; color: var(--arch-success);">{{ received_brokerage | inr }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-wallet2"></i> Total Cash Inflow</span>
+    </div>
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-danger);">
+        <div class="kpi-header">
+            <span class="kpi-label">Outstanding Receivables</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-danger);"><i class="bi bi-hourglass-split"></i></div>
+        </div>
+        <span class="kpi-value" style="font-size: 1.4rem; color: var(--arch-danger);">{{ outstanding_brokerage | inr }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-exclamation-circle"></i> {{ unpaid_invoices_count }} unpaid invoices</span>
+    </div>
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-info);">
+        <div class="kpi-header">
+            <span class="kpi-label">Total Expenses</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-info);"><i class="bi bi-receipt"></i></div>
+        </div>
+        <span class="kpi-value" style="font-size: 1.4rem;">{{ total_expenses_amount | inr }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-pie-chart"></i> Operating expenditure</span>
+    </div>
+</div>
+
+<div class="grid-cols-2" style="margin-top: 1.25rem;">
+    <!-- Pending Invoices -->
+    <div class="card">
+        <div class="card-title">
+            <span>Pending Invoices to Collect</span>
+            <a href="{{ url_for('finance.index') }}" class="btn btn-outline btn-sm"><i class="bi bi-arrow-right"></i> View Receivables</a>
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Party Type</th>
+                        <th>Due Date</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in pending_invoices_list %}
+                    <tr>
+                        <td><strong>{{ inv.invoice_number }}</strong></td>
+                        <td>{{ inv.party_type }}</td>
+                        <td>{{ inv.due_date }}</td>
+                        <td><strong>{{ inv.total_amount | inr }}</strong></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;"><i class="bi bi-check-circle" style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem; color: var(--arch-success);"></i> All invoices are settled!</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Recent Expenses -->
+    <div class="card">
+        <div class="card-title">
+            <span>Recent Operating Expenses</span>
+            <a href="{{ url_for('finance.add_expense') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Record Expense</a>
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Expense</th>
+                        <th>Category</th>
+                        <th>Date</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exp in recent_expenses_list %}
+                    <tr>
+                        <td><strong>{{ exp.title }}</strong><br><small style="color: var(--arch-text-muted);">{{ exp.paid_to }}</small></td>
+                        <td><span class="badge badge-info">{{ exp.category }}</span></td>
+                        <td>{{ exp.expense_date }}</td>
+                        <td style="color: var(--arch-danger);"><strong>{{ exp.amount | inr }}</strong></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No recorded expenses.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# ==================== 2. HR & OPERATIONS DASHBOARD ==================== #}
+{% elif current_user.is_hr() and not current_user.is_management() %}
+<div class="grid-cols-4">
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-blue-primary);">
+        <div class="kpi-header">
+            <span class="kpi-label">Today's Attendance</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-blue-primary);"><i class="bi bi-person-check-fill"></i></div>
+        </div>
+        <span class="kpi-value">{{ today_attendance_count }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-clock"></i> Employees checked in today</span>
+    </div>
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-warning);">
+        <div class="kpi-header">
+            <span class="kpi-label">Pending Leaves</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-warning);"><i class="bi bi-calendar-event"></i></div>
+        </div>
+        <span class="kpi-value" style="color: var(--arch-warning);">{{ pending_leaves_count }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-bell"></i> Awaiting approval</span>
+    </div>
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-success);">
+        <div class="kpi-header">
+            <span class="kpi-label">Open Recruitments</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-success);"><i class="bi bi-person-plus-fill"></i></div>
+        </div>
+        <span class="kpi-value">{{ open_recruitments_count }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-briefcase"></i> Active hiring positions</span>
+    </div>
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-info);">
+        <div class="kpi-header">
+            <span class="kpi-label">Pending Documents</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-info);"><i class="bi bi-file-earmark-check-fill"></i></div>
+        </div>
+        <span class="kpi-value">{{ pending_docs_count }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-shield-check"></i> Verification queue</span>
+    </div>
+</div>
+
+<div class="grid-cols-2" style="margin-top: 1.25rem;">
+    <!-- Today Attendance -->
+    <div class="card">
+        <div class="card-title">
+            <span>Today's Staff Check-ins</span>
+            <a href="{{ url_for('hr.attendance') }}" class="btn btn-outline btn-sm"><i class="bi bi-fingerprint"></i> Attendance Roster</a>
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Department</th>
+                        <th>Check In</th>
+                        <th>Traced Location</th>
+                        <th>Mode</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for att in today_team_attendance %}
+                    <tr>
+                        <td><strong>{{ att.user.full_name }}</strong><br><small style="color: var(--arch-text-muted);">{{ att.user.employee_code or att.user.role }}</small></td>
+                        <td><span class="badge" style="background: rgba(30, 80, 187, 0.1); color: var(--arch-blue-primary); font-size: 0.72rem;">{{ att.user.department }}</span></td>
+                        <td>{{ att.check_in_time.strftime('%I:%M %p') }}</td>
+                        <td>
+                            {% if att.check_in_location %}
+                            <small><i class="bi bi-geo-alt-fill" style="color: #ef4444;"></i> {{ att.check_in_location }}</small>
+                            {% if att.latitude and att.longitude %}
+                            <a href="https://www.google.com/maps?q={{ att.latitude }},{{ att.longitude }}" target="_blank" style="color: var(--arch-blue-primary);" title="Open Map Coordinates"><i class="bi bi-box-arrow-up-right"></i></a>
+                            {% endif %}
+                            {% else %}
+                            <small style="color: var(--arch-text-muted);">Office</small>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge badge-info">{{ att.work_mode }}</span></td>
+                        <td><span class="badge badge-success">{{ att.status }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No punches logged today.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pending Leave Requests -->
+    <div class="card">
+        <div class="card-title">
+            <span>Pending Leave Requests</span>
+            <a href="{{ url_for('hr.leaves_list') }}" class="btn btn-outline btn-sm"><i class="bi bi-calendar3"></i> Manage Leaves</a>
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Leave Type</th>
+                        <th>Duration</th>
+                        <th>Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lv in pending_leaves_list %}
+                    <tr>
+                        <td><strong>{{ lv.user.full_name }}</strong></td>
+                        <td><span class="badge badge-warning">{{ lv.leave_type }}</span></td>
+                        <td>{{ lv.start_date }} to {{ lv.end_date }}</td>
+                        <td><small>{{ lv.reason | truncate(35) }}</small></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;"><i class="bi bi-check2-all" style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem; color: var(--arch-success);"></i> No pending leave requests!</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# ==================== 3. FIELD OPERATIONS DASHBOARD ==================== #}
+{% elif current_user.is_field() and not current_user.is_management() %}
+<div class="grid-cols-4">
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-warning);">
+        <div class="kpi-header">
+            <span class="kpi-label">Today's Visits</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-warning);"><i class="bi bi-geo-alt-fill"></i></div>
+        </div>
+        <span class="kpi-value" style="color: var(--arch-warning);">{{ my_today_visits_count }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-calendar-check"></i> Scheduled for today</span>
+    </div>
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-blue-primary);">
+        <div class="kpi-header">
+            <span class="kpi-label">Upcoming Visits</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-blue-primary);"><i class="bi bi-calendar3"></i></div>
+        </div>
+        <span class="kpi-value">{{ upcoming_visits }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-clock-history"></i> Confirmed inspections</span>
+    </div>
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-info);">
+        <div class="kpi-header">
+            <span class="kpi-label">Available Inventory</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-info);"><i class="bi bi-building"></i></div>
+        </div>
+        <span class="kpi-value">{{ available_properties }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-pin-map"></i> Properties across Ahmedabad</span>
+    </div>
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-success);">
+        <div class="kpi-header">
+            <span class="kpi-label">Punch Status</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-success);"><i class="bi bi-fingerprint"></i></div>
+        </div>
+        <span class="kpi-value" style="font-size: 1.15rem; color: {% if my_today_punch %}var(--arch-success){% else %}var(--arch-danger){% endif %};">
+            {% if my_today_punch %}Checked In{% else %}Not Punched{% endif %}
+        </span>
+        <span class="kpi-subtitle">
+            {% if my_today_punch %}{{ my_today_punch.check_in_time.strftime('%I:%M %p') }} ({{ my_today_punch.work_mode }}){% else %}<a href="{{ url_for('hr.attendance') }}" style="color: var(--arch-blue-primary); text-decoration: underline;">Punch In Now &rarr;</a>{% endif %}
+        </span>
+    </div>
+</div>
+
+<div class="grid-cols-2" style="margin-top: 1.25rem;">
+    <!-- Upcoming Site Visits -->
+    <div class="card">
+        <div class="card-title">
+            <span>My Upcoming Site Visits</span>
+            <a href="{{ url_for('field.visits_list') }}" class="btn btn-outline btn-sm"><i class="bi bi-calendar3"></i> View Schedule</a>
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Property & Locality</th>
+                        <th>Date & Time</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in upcoming_visits_list %}
+                    <tr>
+                        <td><strong>{{ v.property.title }}</strong><br><small style="color: var(--arch-text-muted);"><i class="bi bi-geo-alt"></i> {{ v.property.locality }}</small></td>
+                        <td>{{ v.visit_date }}<br><small>{{ v.visit_time.strftime('%I:%M %p') }}</small></td>
+                        <td><span class="badge badge-warning">{{ v.status }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No upcoming site visits assigned.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- My Field Tasks -->
+    <div class="card">
+        <div class="card-title">
+            <span>My Field Tasks & NOCs</span>
+            <a href="{{ url_for('hr.tasks_list') }}" class="btn btn-outline btn-sm"><i class="bi bi-list-task"></i> All Tasks</a>
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Task</th>
+                        <th>Due Date</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in my_tasks %}
+                    <tr>
+                        <td><strong>{{ t.title }}</strong></td>
+                        <td>{{ t.due_date }}</td>
+                        <td><span class="badge {% if t.priority == 'High' %}badge-danger{% else %}badge-info{% endif %}">{{ t.priority }}</span></td>
+                        <td><span class="badge badge-warning">{{ t.status }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No pending field tasks.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# ==================== 4. DIGITAL MARKETING & IT (MERGED) DASHBOARD ==================== #}
+{% elif (current_user.is_marketing() or current_user.is_it()) and not current_user.is_management() %}
+<div class="grid-cols-4">
+    <div class="kpi-card" style="border-left: 4px solid #0ea5e9;">
+        <div class="kpi-header">
+            <span class="kpi-label">Active Ad Campaigns</span>
+            <div class="kpi-icon-wrap" style="color: #0ea5e9;"><i class="bi bi-megaphone-fill"></i></div>
+        </div>
+        <span class="kpi-value">{{ active_campaigns_count }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-broadcast"></i> Google, Meta & 99acres</span>
+    </div>
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-blue-primary);">
+        <div class="kpi-header">
+            <span class="kpi-label">Total Ad Spend</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-blue-primary);"><i class="bi bi-cash-stack"></i></div>
+        </div>
+        <span class="kpi-value" style="font-size: 1.4rem;">{{ total_marketing_spend | inr }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-funnel-fill"></i> {{ total_marketing_leads }} Inbound Leads</span>
+    </div>
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-danger);">
+        <div class="kpi-header">
+            <span class="kpi-label">Open IT Tickets</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-danger);"><i class="bi bi-headset"></i></div>
+        </div>
+        <span class="kpi-value" style="color: var(--arch-danger);">{{ open_tickets_count }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-shield-exclamation"></i> {{ critical_tickets_count }} Critical Incidents</span>
+    </div>
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-success);">
+        <div class="kpi-header">
+            <span class="kpi-label">System Health</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-success);"><i class="bi bi-cpu-fill"></i></div>
+        </div>
+        <span class="kpi-value" style="color: var(--arch-success);">100%</span>
+        <span class="kpi-subtitle"><i class="bi bi-check-circle-fill"></i> {{ operational_services_count }} / {{ services_count }} Services Up</span>
+    </div>
+</div>
+
+<div class="grid-cols-2" style="margin-top: 1.5rem;">
+    <!-- Active Campaigns -->
+    <div class="card" style="padding: 0;">
+        <div style="padding: 1rem; border-bottom: 1px solid var(--arch-border); display: flex; justify-content: space-between; align-items: center;">
+            <strong style="font-size: 0.95rem;"><i class="bi bi-bullseye" style="color: #0ea5e9;"></i> Active Ad Campaigns & ROI</strong>
+            <a href="{{ url_for('marketing.create_campaign') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Launch Campaign</a>
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Campaign</th>
+                        <th>Platform</th>
+                        <th>Spend</th>
+                        <th>Leads</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in recent_campaigns_list %}
+                    <tr>
+                        <td>
+                            <strong>{{ c.name }}</strong><br>
+                            <small style="color: var(--arch-text-muted);">{{ c.campaign_code }}</small>
+                        </td>
+                        <td><span class="badge badge-info">{{ c.platform }}</span></td>
+                        <td><strong>{{ c.spent_amount | inr }}</strong></td>
+                        <td><span class="badge badge-success">{{ c.leads_generated }}</span></td>
+                        <td>
+                            <span class="badge {% if c.status == 'Active' %}badge-success{% else %}badge-warning{% endif %}">
+                                {{ c.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No campaigns active yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Active IT Tickets -->
+    <div class="card" style="padding: 0;">
+        <div style="padding: 1rem; border-bottom: 1px solid var(--arch-border); display: flex; justify-content: space-between; align-items: center;">
+            <strong style="font-size: 0.95rem;"><i class="bi bi-ticket-detailed-fill" style="color: var(--arch-blue-primary);"></i> Active Helpdesk Tickets</strong>
+            <a href="{{ url_for('it.create_ticket') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Log Ticket</a>
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Ticket</th>
+                        <th>Category</th>
+                        <th>Priority</th>
+                        <th>Requested By</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in recent_tickets_list %}
+                    <tr>
+                        <td>
+                            <strong>{{ t.title }}</strong><br>
+                            <small style="color: var(--arch-text-muted);">{{ t.ticket_number }}</small>
+                        </td>
+                        <td><span class="badge badge-info">{{ t.category }}</span></td>
+                        <td>
+                            <span class="badge {% if t.priority == 'Critical' %}badge-danger{% elif t.priority == 'High' %}badge-warning{% else %}badge-primary{% endif %}">
+                                {{ t.priority }}
+                            </span>
+                        </td>
+                        <td>{{ t.requested_by.full_name }}</td>
+                        <td>
+                            <span class="badge {% if t.status in ['Resolved', 'Closed'] %}badge-success{% else %}badge-warning{% endif %}">
+                                {{ t.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No open IT tickets. All clear!</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="grid-cols-2" style="margin-top: 1.5rem;">
+    <!-- Infrastructure Quick Status -->
+    <div class="card">
+        <h3 class="card-title" style="margin-bottom: 1rem;"><i class="bi bi-hdd-network-fill" style="color: var(--arch-blue-primary);"></i> Server & Infrastructure Telemetry</h3>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <div style="padding: 0.75rem 1rem; border: 1px solid var(--arch-border); border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong>ERP Application Server</strong><br>
+                    <small style="color: var(--arch-text-muted);">Flask / Python Engine &bull; Port 5000</small>
+                </div>
+                <span class="badge badge-success"><i class="bi bi-check-circle-fill"></i> Operational</span>
+            </div>
+
+            <div style="padding: 0.75rem 1rem; border: 1px solid var(--arch-border); border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong>Relational Database Engine</strong><br>
+                    <small style="color: var(--arch-text-muted);">SQLite ACID Storage &bull; Instance Database</small>
+                </div>
+                <span class="badge badge-success"><i class="bi bi-check-circle-fill"></i> Operational</span>
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                <a href="{{ url_for('it.assets_list') }}" class="btn btn-outline btn-sm" style="flex: 1; justify-content: center;">
+                    <i class="bi bi-laptop"></i> Hardware Inventory ({{ allocated_assets_count }})
+                </a>
+                <a href="{{ url_for('it.infrastructure') }}" class="btn btn-primary btn-sm" style="flex: 1; justify-content: center;">
+                    <i class="bi bi-hdd-network-fill"></i> Full Telemetry
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Growth Operations -->
+    <div class="card">
+        <h3 class="card-title" style="margin-bottom: 1rem;"><i class="bi bi-lightning-charge-fill" style="color: #f59e0b;"></i> Growth Operations & Portals</h3>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <a href="{{ url_for('marketing.campaigns_list') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                <i class="bi bi-megaphone-fill" style="color: #0ea5e9;"></i>
+                <div style="text-align: left; margin-left: 0.5rem;">
+                    <strong>Ad Campaigns & Portals</strong>
+                    <span style="display: block; font-size: 0.75rem; color: var(--arch-text-muted);">Manage 99acres, Magicbricks, Google & Meta Ads</span>
+                </div>
+            </a>
+            <a href="{{ url_for('marketing.attribution') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                <i class="bi bi-pie-chart-fill" style="color: #8b5cf6;"></i>
+                <div style="text-align: left; margin-left: 0.5rem;">
+                    <strong>Source Attribution & ROI</strong>
+                    <span style="display: block; font-size: 0.75rem; color: var(--arch-text-muted);">Cost Per Lead (CPL) analytics across channels</span>
+                </div>
+            </a>
+            <a href="{{ url_for('hr.attendance') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                <i class="bi bi-clock-history" style="color: var(--arch-success);"></i>
+                <div style="text-align: left; margin-left: 0.5rem;">
+                    <strong>Attendance Punch</strong>
+                    <span style="display: block; font-size: 0.75rem; color: var(--arch-text-muted);">Daily shift check-in and leave management</span>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+{# ==================== 5. SALES & CRM NON-MANAGEMENT ==================== #}
+{% elif current_user.is_sales() and not current_user.is_management() %}
+<div class="grid-cols-4">
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-blue-primary);">
+        <div class="kpi-header">
+            <span class="kpi-label">Active Leads</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-blue-primary);"><i class="bi bi-person-lines-fill"></i></div>
+        </div>
+        <span class="kpi-value">{{ total_leads }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-plus-circle"></i> {{ new_leads }} new in selected period</span>
+    </div>
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-info);">
+        <div class="kpi-header">
+            <span class="kpi-label">Available Properties</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-info);"><i class="bi bi-building"></i></div>
+        </div>
+        <span class="kpi-value">{{ available_properties }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-geo-alt"></i> Ahmedabad Inventory</span>
+    </div>
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-warning);">
+        <div class="kpi-header">
+            <span class="kpi-label">Upcoming Site Visits</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-warning);"><i class="bi bi-calendar2-check"></i></div>
+        </div>
+        <span class="kpi-value" style="color: var(--arch-warning);">{{ upcoming_visits }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-clock"></i> Scheduled / Confirmed</span>
+    </div>
+    <div class="kpi-card" style="border-left: 4px solid var(--arch-success);">
+        <div class="kpi-header">
+            <span class="kpi-label">Open Deals</span>
+            <div class="kpi-icon-wrap" style="color: var(--arch-success);"><i class="bi bi-briefcase-fill"></i></div>
+        </div>
+        <span class="kpi-value">{{ open_deals }}</span>
+        <span class="kpi-subtitle"><i class="bi bi-check-circle"></i> {{ won_deals }} Closed Won</span>
+    </div>
+</div>
+
+<div class="grid-cols-2" style="margin-top: 1.25rem;">
+    <!-- Lead Conversion Funnel -->
+    <div class="card">
+        <h3 class="card-title"><i class="bi bi-funnel"></i> Lead Conversion Funnel</h3>
+        <div style="height: 250px;">
+            <canvas id="leadFunnelChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Inventory by Category -->
+    <div class="card">
+        <h3 class="card-title"><i class="bi bi-pie-chart"></i> Inventory by Category</h3>
+        <div style="height: 250px;">
+            <canvas id="propCategoryChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="grid-cols-2" style="margin-top: 1.25rem;">
+    <div class="card">
+        <div class="card-title">
+            <span>Recent Inquiries & Leads</span>
+            <a href="{{ url_for('crm.leads_list') }}" class="btn btn-outline btn-sm"><i class="bi bi-arrow-right"></i> View Leads</a>
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Client</th>
+                        <th>Category</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lead in recent_leads %}
+                    <tr>
+                        <td><a href="{{ url_for('crm.lead_detail', lead_id=lead.id) }}"><strong>{{ lead.lead_code }}</strong></a></td>
+                        <td>{{ lead.full_name }}<br><small style="color: var(--arch-text-muted);"><i class="bi bi-telephone"></i> {{ lead.phone }}</small></td>
+                        <td>{{ lead.property_category }}</td>
+                        <td><span class="badge badge-info">{{ lead.status }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No recent leads found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">
+            <span>Upcoming Site Visits</span>
+            <a href="{{ url_for('field.visits_list') }}" class="btn btn-outline btn-sm"><i class="bi bi-plus-lg"></i> Schedule Visit</a>
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Date & Time</th>
+                        <th>Executive</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in upcoming_visits_list %}
+                    <tr>
+                        <td><strong>{{ v.property.title }}</strong><br><small style="color: var(--arch-text-muted);"><i class="bi bi-geo-alt"></i> {{ v.property.locality }}</small></td>
+                        <td>{{ v.visit_date }}<br><small>{{ v.visit_time.strftime('%I:%M %p') }}</small></td>
+                        <td>{{ v.assigned_employee.full_name }}</td>
+                        <td><span class="badge badge-warning">{{ v.status }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No upcoming site visits scheduled.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# ==================== 6. EXECUTIVE ADMIN DEPARTMENT HUB (MANAGEMENT) ==================== #}
+{% else %}
+
+<!-- Department Switcher Navigation -->
+<div class="dept-tabs-nav">
+    <button class="dept-tab-btn active" onclick="switchDeptTab('overview')" id="tab-btn-overview">
+        <i class="bi bi-grid-1x2-fill"></i> Enterprise 360°
+    </button>
+    <button class="dept-tab-btn" onclick="switchDeptTab('sales')" id="tab-btn-sales">
+        <i class="bi bi-briefcase-fill"></i> Sales & CRM <span class="badge badge-primary" style="font-size: 0.7rem; margin-left: 0.35rem;">{{ total_leads }}</span>
+    </button>
+    <button class="dept-tab-btn" onclick="switchDeptTab('properties')" id="tab-btn-properties">
+        <i class="bi bi-building"></i> Properties & Inventory <span class="badge badge-info" style="font-size: 0.7rem; margin-left: 0.35rem;">{{ available_properties }}</span>
+    </button>
+    <button class="dept-tab-btn" onclick="switchDeptTab('finance')" id="tab-btn-finance">
+        <i class="bi bi-cash-stack"></i> Finance & Accounts <span class="badge badge-danger" style="font-size: 0.7rem; margin-left: 0.35rem;">{{ unpaid_invoices_count }} Unpaid</span>
+    </button>
+    <button class="dept-tab-btn" onclick="switchDeptTab('hr')" id="tab-btn-hr">
+        <i class="bi bi-people-fill"></i> HR & Operations <span class="badge badge-warning" style="font-size: 0.7rem; margin-left: 0.35rem;">{{ pending_leaves_count }} Leaves</span>
+    </button>
+    <button class="dept-tab-btn" onclick="switchDeptTab('marketing-it')" id="tab-btn-marketing-it">
+        <i class="bi bi-cpu-fill"></i> Digital Marketing & IT <span class="badge badge-success" style="font-size: 0.7rem; margin-left: 0.35rem;">{{ active_campaigns_count }} Live</span>
+    </button>
+    <button class="dept-tab-btn" onclick="switchDeptTab('field')" id="tab-btn-field">
+        <i class="bi bi-geo-alt-fill"></i> Field Operations & GPS <span class="badge badge-secondary" style="font-size: 0.7rem; margin-left: 0.35rem;">{{ upcoming_visits }} Visits</span>
+    </button>
+</div>
+
+<!-- ================= SLOT 1: ENTERPRISE 360° OVERVIEW ================= -->
+<div class="dept-slot-pane active" id="dept-slot-overview">
+    <!-- Top Executive KPIs -->
+    <div class="grid-cols-4">
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-blue-primary);">
+            <div class="kpi-header">
+                <span class="kpi-label">Active Leads</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-blue-primary);"><i class="bi bi-person-lines-fill"></i></div>
+            </div>
+            <span class="kpi-value">{{ total_leads }}</span>
+            <span class="kpi-subtitle"><i class="bi bi-plus-circle"></i> {{ new_leads }} new in selected period</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-info);">
+            <div class="kpi-header">
+                <span class="kpi-label">Available Inventory</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-info);"><i class="bi bi-building"></i></div>
+            </div>
+            <span class="kpi-value">{{ available_properties }}</span>
+            <span class="kpi-subtitle"><i class="bi bi-pin-map"></i> Ahmedabad Commercial & Resi</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-success);">
+            <div class="kpi-header">
+                <span class="kpi-label">Received Collections</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-success);"><i class="bi bi-check2-all"></i></div>
+            </div>
+            <span class="kpi-value" style="font-size: 1.4rem; color: var(--arch-success);">{{ received_brokerage | inr }}</span>
+            <span class="kpi-subtitle">Realized Cash Inflow</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-warning);">
+            <div class="kpi-header">
+                <span class="kpi-label">Today's Staff Present</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-warning);"><i class="bi bi-person-badge-fill"></i></div>
+            </div>
+            <span class="kpi-value" style="color: var(--arch-warning);">{{ today_attendance_count }}</span>
+            <span class="kpi-subtitle"><i class="bi bi-calendar-check"></i> Office & Field Punches</span>
+        </div>
+    </div>
+
+    <!-- Financial Health Summary -->
+    <div class="grid-cols-4" style="margin-top: 1rem;">
+        <div class="kpi-card" style="border-left: 4px solid #0284c7;">
+            <div class="kpi-header">
+                <span class="kpi-label">Won Deals Value</span>
+                <div class="kpi-icon-wrap" style="color: #0284c7;"><i class="bi bi-trophy"></i></div>
+            </div>
+            <span class="kpi-value" style="font-size: 1.4rem;">{{ deal_value_sum | inr }}</span>
+            <span class="kpi-subtitle">{{ won_deals }} Closed Won Deals</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-blue-primary);">
+            <div class="kpi-header">
+                <span class="kpi-label">Expected Brokerage</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-blue-primary);"><i class="bi bi-cash-stack"></i></div>
+            </div>
+            <span class="kpi-value" style="font-size: 1.4rem;">{{ expected_brokerage | inr }}</span>
+            <span class="kpi-subtitle">Receivables Pipeline</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-danger);">
+            <div class="kpi-header">
+                <span class="kpi-label">Outstanding Receivables</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-danger);"><i class="bi bi-clock-history"></i></div>
+            </div>
+            <span class="kpi-value" style="font-size: 1.4rem; color: var(--arch-danger);">{{ outstanding_brokerage | inr }}</span>
+            <span class="kpi-subtitle">{{ unpaid_invoices_count }} Pending Invoices</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid #8b5cf6;">
+            <div class="kpi-header">
+                <span class="kpi-label">Marketing Ad Spend</span>
+                <div class="kpi-icon-wrap" style="color: #8b5cf6;"><i class="bi bi-graph-up-arrow"></i></div>
+            </div>
+            <span class="kpi-value" style="font-size: 1.4rem;">{{ total_marketing_spend | inr }}</span>
+            <span class="kpi-subtitle">{{ total_marketing_leads }} Inbound Leads (₹{{ avg_marketing_cpl | round(1) }}/lead)</span>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid-cols-2" style="margin-top: 1.25rem;">
+        <div class="card">
+            <h3 class="card-title"><i class="bi bi-funnel"></i> Lead Conversion Funnel</h3>
+            <div style="height: 250px;">
+                <canvas id="leadFunnelChart"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <h3 class="card-title"><i class="bi bi-pie-chart"></i> Inventory by Category</h3>
+            <div style="height: 250px;">
+                <canvas id="propCategoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Executive Quick Jump Bar -->
+    <div class="card" style="margin-top: 1.25rem; padding: 1rem 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+                <strong style="font-size: 0.95rem; display: block;"><i class="bi bi-stars" style="color: var(--arch-accent);"></i> Quick Executive Navigation</strong>
+                <small style="color: var(--arch-text-muted);">Instant access across all integrated company departments</small>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a href="javascript:void(0)" onclick="switchDeptTab('sales')" class="quick-action-pill"><i class="bi bi-briefcase text-primary"></i> Sales CRM</a>
+                <a href="javascript:void(0)" onclick="switchDeptTab('properties')" class="quick-action-pill"><i class="bi bi-building text-info"></i> Inventory</a>
+                <a href="javascript:void(0)" onclick="switchDeptTab('finance')" class="quick-action-pill"><i class="bi bi-cash-stack text-success"></i> Finance</a>
+                <a href="javascript:void(0)" onclick="switchDeptTab('hr')" class="quick-action-pill"><i class="bi bi-people text-warning"></i> HR Operations</a>
+                <a href="javascript:void(0)" onclick="switchDeptTab('marketing-it')" class="quick-action-pill"><i class="bi bi-cpu text-purple"></i> Digital & IT</a>
+                <a href="javascript:void(0)" onclick="switchDeptTab('field')" class="quick-action-pill"><i class="bi bi-geo-alt text-danger"></i> Field & GPS</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Cross-Department Activities -->
+    <div class="grid-cols-2" style="margin-top: 1.25rem;">
+        <div class="card">
+            <div class="card-title">
+                <span>Recent Inquiries & Leads</span>
+                <a href="{{ url_for('crm.leads_list') }}" class="btn btn-outline btn-sm"><i class="bi bi-arrow-right"></i> All Leads</a>
+            </div>
+            <div class="table-responsive">
+                <table class="arch-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Client</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lead in recent_leads %}
+                        <tr>
+                            <td><a href="{{ url_for('crm.lead_detail', lead_id=lead.id) }}"><strong>{{ lead.lead_code }}</strong></a></td>
+                            <td>{{ lead.full_name }}<br><small style="color: var(--arch-text-muted);"><i class="bi bi-telephone"></i> {{ lead.phone }}</small></td>
+                            <td>{{ lead.property_category }}</td>
+                            <td><span class="badge badge-info">{{ lead.status }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No recent leads found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span>Upcoming Site Inspections</span>
+                <a href="{{ url_for('field.visits_list') }}" class="btn btn-outline btn-sm"><i class="bi bi-calendar3"></i> All Visits</a>
+            </div>
+            <div class="table-responsive">
+                <table class="arch-table">
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Date & Time</th>
+                            <th>Executive</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for v in upcoming_visits_list %}
+                        <tr>
+                            <td><strong>{{ v.property.title }}</strong><br><small style="color: var(--arch-text-muted);"><i class="bi bi-geo-alt"></i> {{ v.property.locality }}</small></td>
+                            <td>{{ v.visit_date }}<br><small>{{ v.visit_time.strftime('%I:%M %p') }}</small></td>
+                            <td>{{ v.assigned_employee.full_name }}</td>
+                            <td><span class="badge badge-warning">{{ v.status }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No upcoming site visits scheduled.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= SLOT 2: SALES & CRM DASHBOARD ================= -->
+<div class="dept-slot-pane" id="dept-slot-sales">
+    <div class="grid-cols-4">
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-blue-primary);">
+            <div class="kpi-header">
+                <span class="kpi-label">Active Leads</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-blue-primary);"><i class="bi bi-person-lines-fill"></i></div>
+            </div>
+            <span class="kpi-value">{{ total_leads }}</span>
+            <span class="kpi-subtitle"><i class="bi bi-plus-circle"></i> {{ new_leads }} new inquiries</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-success);">
+            <div class="kpi-header">
+                <span class="kpi-label">Qualified Inquiries</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-success);"><i class="bi bi-check-circle-fill"></i></div>
+            </div>
+            <span class="kpi-value" style="color: var(--arch-success);">{{ qualified_leads }}</span>
+            <span class="kpi-subtitle">High intent prospects</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-warning);">
+            <div class="kpi-header">
+                <span class="kpi-label">Deals in Negotiation</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-warning);"><i class="bi bi-briefcase-fill"></i></div>
+            </div>
+            <span class="kpi-value" style="color: var(--arch-warning);">{{ open_deals }}</span>
+            <span class="kpi-subtitle">Active transactions</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid #0284c7;">
+            <div class="kpi-header">
+                <span class="kpi-label">Closed Won Deals</span>
+                <div class="kpi-icon-wrap" style="color: #0284c7;"><i class="bi bi-trophy-fill"></i></div>
+            </div>
+            <span class="kpi-value" style="color: #0284c7;">{{ won_deals }}</span>
+            <span class="kpi-subtitle">{{ deal_value_sum | inr }} Gross Value</span>
+        </div>
+    </div>
+
+    <div class="grid-cols-2" style="margin-top: 1.25rem;">
+        <div class="card">
+            <div class="card-title">
+                <span>Recent Lead Inquiries</span>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="{{ url_for('crm.lead_create') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add Lead</a>
+                    <a href="{{ url_for('crm.leads_list') }}" class="btn btn-outline btn-sm">All Leads</a>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="arch-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Client</th>
+                            <th>Budget</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lead in recent_leads %}
+                        <tr>
+                            <td><a href="{{ url_for('crm.lead_detail', lead_id=lead.id) }}"><strong>{{ lead.lead_code }}</strong></a></td>
+                            <td>{{ lead.full_name }}<br><small style="color: var(--arch-text-muted);">{{ lead.phone }}</small></td>
+                            <td>{{ lead.budget_max | inr }}</td>
+                            <td><span class="badge badge-info">{{ lead.status }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No leads recorded.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span>Sales Department Operations</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <a href="{{ url_for('crm.leads_list') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                    <i class="bi bi-kanban-fill" style="color: var(--arch-blue-primary);"></i>
+                    <div style="text-align: left; margin-left: 0.5rem;">
+                        <strong>CRM Leads & Pipeline Funnel</strong>
+                        <span style="display: block; font-size: 0.75rem; color: var(--arch-text-muted);">Manage sales stages from New to Closed Won</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('deals.index') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                    <i class="bi bi-briefcase-fill" style="color: var(--arch-success);"></i>
+                    <div style="text-align: left; margin-left: 0.5rem;">
+                        <strong>Commercial & Residential Deals</strong>
+                        <span style="display: block; font-size: 0.75rem; color: var(--arch-text-muted);">Active transactions, token advances & agreement tracking</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('shortlisting.index') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                    <i class="bi bi-collection-play-fill" style="color: #8b5cf6;"></i>
+                    <div style="text-align: left; margin-left: 0.5rem;">
+                        <strong>Client Property Shortlisting Kanban</strong>
+                        <span style="display: block; font-size: 0.75rem; color: var(--arch-text-muted);">Proposed, Shortlisted, Meeting Scheduled & Finalized</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('crm.clients_list') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                    <i class="bi bi-person-badge-fill" style="color: #0284c7;"></i>
+                    <div style="text-align: left; margin-left: 0.5rem;">
+                        <strong>Clients & Institutional Accounts</strong>
+                        <span style="display: block; font-size: 0.75rem; color: var(--arch-text-muted);">Directory of buyers, tenants and corporate entities</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= SLOT 3: PROPERTIES & INVENTORY DASHBOARD ================= -->
+<div class="dept-slot-pane" id="dept-slot-properties">
+    <div class="grid-cols-4">
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-blue-primary);">
+            <div class="kpi-header">
+                <span class="kpi-label">Available Units</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-blue-primary);"><i class="bi bi-building"></i></div>
+            </div>
+            <span class="kpi-value">{{ available_properties }}</span>
+            <span class="kpi-subtitle">Ahmedabad live inventory</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-info);">
+            <div class="kpi-header">
+                <span class="kpi-label">Commercial Assets</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-info);"><i class="bi bi-buildings"></i></div>
+            </div>
+            <span class="kpi-value">{{ commercial_properties_count }}</span>
+            <span class="kpi-subtitle">Offices, Showrooms & Retail</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-success);">
+            <div class="kpi-header">
+                <span class="kpi-label">Residential Assets</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-success);"><i class="bi bi-house-door-fill"></i></div>
+            </div>
+            <span class="kpi-value" style="color: var(--arch-success);">{{ residential_properties_count }}</span>
+            <span class="kpi-subtitle">Apartments, Bungalows & Plots</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid #8b5cf6;">
+            <div class="kpi-header">
+                <span class="kpi-label">Pre-Leased ROI</span>
+                <div class="kpi-icon-wrap" style="color: #8b5cf6;"><i class="bi bi-graph-up-arrow"></i></div>
+            </div>
+            <span class="kpi-value" style="color: #8b5cf6;">{{ pre_leased_properties_count }}</span>
+            <span class="kpi-subtitle">Rental income generating assets</span>
+        </div>
+    </div>
+
+    <div class="grid-cols-2" style="margin-top: 1.25rem;">
+        <div class="card">
+            <div class="card-title">
+                <span>Recent Properties Added</span>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="{{ url_for('properties.create_property') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add Property</a>
+                    <a href="{{ url_for('properties.index') }}" class="btn btn-outline btn-sm">All Inventory</a>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="arch-table">
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Locality</th>
+                            <th>Category</th>
+                            <th>Expected Price/Rent</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in all_active_properties %}
+                        <tr>
+                            <td><a href="{{ url_for('properties.detail', property_id=p.id) }}"><strong>{{ p.title }}</strong></a><br><small style="color: var(--arch-text-muted);">{{ p.property_code }}</small></td>
+                            <td><i class="bi bi-geo-alt"></i> {{ p.locality }}</td>
+                            <td><span class="badge badge-info">{{ p.category }}</span></td>
+                            <td><strong>{{ (p.expected_price or p.expected_rent) | inr }}</strong></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No properties found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span>Inventory & Sourcing Actions</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <a href="{{ url_for('properties.matching') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                    <i class="bi bi-cpu-fill" style="color: var(--arch-blue-primary);"></i>
+                    <div style="text-align: left; margin-left: 0.5rem;">
+                        <strong>AI Property Matching Engine</strong>
+                        <span style="display: block; font-size: 0.75rem; color: var(--arch-text-muted);">Instant compatibility matching with buyer requirements</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('sourcing.index') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                    <i class="bi bi-search" style="color: #0284c7;"></i>
+                    <div style="text-align: left; margin-left: 0.5rem;">
+                        <strong>Sourcing & Asset Acquisition ({{ sourcing_assignments_count }} Assignments)</strong>
+                        <span style="display: block; font-size: 0.75rem; color: var(--arch-text-muted);">Targeted locality hunting and owner inventory submissions</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('properties.approvals') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                    <i class="bi bi-patch-check-fill" style="color: var(--arch-success);"></i>
+                    <div style="text-align: left; margin-left: 0.5rem;">
+                        <strong>Property Verification & Approval Queue</strong>
+                        <span style="display: block; font-size: 0.75rem; color: var(--arch-text-muted);">QC review for field agent submitted listings</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('properties.map_view') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                    <i class="bi bi-map-fill" style="color: #f59e0b;"></i>
+                    <div style="text-align: left; margin-left: 0.5rem;">
+                        <strong>Ahmedabad Interactive Geospatial Map</strong>
+                        <span style="display: block; font-size: 0.75rem; color: var(--arch-text-muted);">Visual cluster map across SG Highway, Prahlad Nagar, Bodakdev</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= SLOT 4: FINANCE & ACCOUNTS DASHBOARD ================= -->
+<div class="dept-slot-pane" id="dept-slot-finance">
+    <div class="grid-cols-4">
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-blue-primary);">
+            <div class="kpi-header">
+                <span class="kpi-label">Expected Brokerage</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-blue-primary);"><i class="bi bi-cash-stack"></i></div>
+            </div>
+            <span class="kpi-value" style="font-size: 1.4rem;">{{ expected_brokerage | inr }}</span>
+            <span class="kpi-subtitle">Receivables Pipeline</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-success);">
+            <div class="kpi-header">
+                <span class="kpi-label">Realized Collections</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-success);"><i class="bi bi-check2-circle"></i></div>
+            </div>
+            <span class="kpi-value" style="font-size: 1.4rem; color: var(--arch-success);">{{ received_brokerage | inr }}</span>
+            <span class="kpi-subtitle">Realized Cash Inflow</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-danger);">
+            <div class="kpi-header">
+                <span class="kpi-label">Outstanding Receivables</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-danger);"><i class="bi bi-hourglass-split"></i></div>
+            </div>
+            <span class="kpi-value" style="font-size: 1.4rem; color: var(--arch-danger);">{{ outstanding_brokerage | inr }}</span>
+            <span class="kpi-subtitle">{{ unpaid_invoices_count }} Unpaid Invoices</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-info);">
+            <div class="kpi-header">
+                <span class="kpi-label">Total Expenses</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-info);"><i class="bi bi-receipt"></i></div>
+            </div>
+            <span class="kpi-value" style="font-size: 1.4rem;">{{ total_expenses_amount | inr }}</span>
+            <span class="kpi-subtitle">Operating Expenditure</span>
+        </div>
+    </div>
+
+    <div class="grid-cols-2" style="margin-top: 1.25rem;">
+        <div class="card">
+            <div class="card-title">
+                <span>Pending Invoices to Collect</span>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="{{ url_for('finance.index') }}" class="btn btn-primary btn-sm"><i class="bi bi-receipt"></i> Invoicing Ledger</a>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="arch-table">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Party</th>
+                            <th>Due Date</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inv in pending_invoices_list %}
+                        <tr>
+                            <td><strong>{{ inv.invoice_number }}</strong></td>
+                            <td>{{ inv.party_type }}</td>
+                            <td>{{ inv.due_date }}</td>
+                            <td><strong>{{ inv.total_amount | inr }}</strong></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;"><i class="bi bi-check-circle" style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem; color: var(--arch-success);"></i> All invoices settled!</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span>Recent Operating Expenses</span>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="{{ url_for('finance.add_expense') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Record Expense</a>
+                    <a href="{{ url_for('finance.index') }}" class="btn btn-outline btn-sm">All Expenses</a>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="arch-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Date</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exp in recent_expenses_list %}
+                        <tr>
+                            <td><strong>{{ exp.title }}</strong><br><small style="color: var(--arch-text-muted);">{{ exp.paid_to }}</small></td>
+                            <td><span class="badge badge-info">{{ exp.category }}</span></td>
+                            <td>{{ exp.expense_date }}</td>
+                            <td style="color: var(--arch-danger);"><strong>{{ exp.amount | inr }}</strong></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No recorded expenses.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= SLOT 5: HR & OPERATIONS DASHBOARD ================= -->
+<div class="dept-slot-pane" id="dept-slot-hr">
+    <div class="grid-cols-4">
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-blue-primary);">
+            <div class="kpi-header">
+                <span class="kpi-label">Today's Attendance</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-blue-primary);"><i class="bi bi-person-check-fill"></i></div>
+            </div>
+            <span class="kpi-value">{{ today_attendance_count }}</span>
+            <span class="kpi-subtitle">Employees punched in today</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-warning);">
+            <div class="kpi-header">
+                <span class="kpi-label">Pending Leaves</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-warning);"><i class="bi bi-calendar-event"></i></div>
+            </div>
+            <span class="kpi-value" style="color: var(--arch-warning);">{{ pending_leaves_count }}</span>
+            <span class="kpi-subtitle">Awaiting managerial approval</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-success);">
+            <div class="kpi-header">
+                <span class="kpi-label">Open Recruitments</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-success);"><i class="bi bi-person-plus-fill"></i></div>
+            </div>
+            <span class="kpi-value">{{ open_recruitments_count }}</span>
+            <span class="kpi-subtitle">Active hiring positions</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-info);">
+            <div class="kpi-header">
+                <span class="kpi-label">Pending KYC / Docs</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-info);"><i class="bi bi-file-earmark-check-fill"></i></div>
+            </div>
+            <span class="kpi-value">{{ pending_docs_count }}</span>
+            <span class="kpi-subtitle">Verification backlog</span>
+        </div>
+    </div>
+
+    <div class="grid-cols-2" style="margin-top: 1.25rem;">
+        <div class="card">
+            <div class="card-title">
+                <span>Today's Staff Check-ins</span>
+                <a href="{{ url_for('hr.attendance') }}" class="btn btn-outline btn-sm"><i class="bi bi-fingerprint"></i> Roster</a>
+            </div>
+            <div class="table-responsive">
+                <table class="arch-table">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Department</th>
+                            <th>Time</th>
+                            <th>Traced Location</th>
+                            <th>Mode</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for att in today_team_attendance %}
+                        <tr>
+                            <td><strong>{{ att.user.full_name }}</strong><br><small style="color: var(--arch-text-muted);">{{ att.user.employee_code or att.user.role }}</small></td>
+                            <td><span class="badge" style="background: rgba(30, 80, 187, 0.1); color: var(--arch-blue-primary); font-size: 0.72rem;">{{ att.user.department }}</span></td>
+                            <td>{{ att.check_in_time.strftime('%I:%M %p') }}</td>
+                            <td>
+                                {% if att.check_in_location %}
+                                <small><i class="bi bi-geo-alt-fill" style="color: #ef4444;"></i> {{ att.check_in_location }}</small>
+                                {% if att.latitude and att.longitude %}
+                                <a href="https://www.google.com/maps?q={{ att.latitude }},{{ att.longitude }}" target="_blank" style="color: var(--arch-blue-primary);" title="View coordinates"><i class="bi bi-box-arrow-up-right"></i></a>
+                                {% endif %}
+                                {% else %}
+                                <small style="color: var(--arch-text-muted);">Office</small>
+                                {% endif %}
+                            </td>
+                            <td><span class="badge badge-info">{{ att.work_mode }}</span></td>
+                            <td><span class="badge badge-success">{{ att.status }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No punches logged today.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span>HR & Operations Workflows</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <a href="{{ url_for('hr.leaves_list') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                    <i class="bi bi-calendar3" style="color: var(--arch-warning);"></i>
+                    <div style="text-align: left; margin-left: 0.5rem;">
+                        <strong>Leave Management ({{ pending_leaves_count }} Pending)</strong>
+                        <span style="display: block; font-size: 0.75rem; color: var(--arch-text-muted);">Casual, Sick, Paid leave review & approval</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('hr.recruitment_list') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                    <i class="bi bi-person-plus-fill" style="color: var(--arch-blue-primary);"></i>
+                    <div style="text-align: left; margin-left: 0.5rem;">
+                        <strong>Recruitment & Candidate Pipeline</strong>
+                        <span style="display: block; font-size: 0.75rem; color: var(--arch-text-muted);">Hiring stages: Screening, Interviews, Offer & Joined</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('hr.onboarding_list') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                    <i class="bi bi-box-arrow-in-right" style="color: var(--arch-success);"></i>
+                    <div style="text-align: left; margin-left: 0.5rem;">
+                        <strong>Employee Onboarding & Induction ({{ in_progress_onboarding_count }} In Progress)</strong>
+                        <span style="display: block; font-size: 0.75rem; color: var(--arch-text-muted);">Document collection, asset allotment & workstation setup</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('hr.exits_list') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                    <i class="bi bi-door-open-fill" style="color: var(--arch-danger);"></i>
+                    <div style="text-align: left; margin-left: 0.5rem;">
+                        <strong>Exit & Clearance Management ({{ notice_exits_count }} in Notice)</strong>
+                        <span style="display: block; font-size: 0.75rem; color: var(--arch-text-muted);">Asset return, department NOC, handover & FnF settlement</span>
+                    </div>
+                </a>
+                <a href="{{ url_for('hr.payroll_list') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                    <i class="bi bi-cash-coin" style="color: #0284c7;"></i>
+                    <div style="text-align: left; margin-left: 0.5rem;">
+                        <strong>Monthly Payroll & Compensation Slips</strong>
+                        <span style="display: block; font-size: 0.75rem; color: var(--arch-text-muted);">Salary computation, deductions, incentives & disbursement</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= SLOT 6: DIGITAL MARKETING & IT (MERGED) DASHBOARD ================= -->
+<div class="dept-slot-pane" id="dept-slot-marketing-it">
+    <div class="grid-cols-4">
+        <div class="kpi-card" style="border-left: 4px solid #0ea5e9;">
+            <div class="kpi-header">
+                <span class="kpi-label">Active Ad Campaigns</span>
+                <div class="kpi-icon-wrap" style="color: #0ea5e9;"><i class="bi bi-megaphone-fill"></i></div>
+            </div>
+            <span class="kpi-value">{{ active_campaigns_count }}</span>
+            <span class="kpi-subtitle">Google, Meta, 99acres & Portals</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-blue-primary);">
+            <div class="kpi-header">
+                <span class="kpi-label">Ad Spend & Inbound</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-blue-primary);"><i class="bi bi-cash-stack"></i></div>
+            </div>
+            <span class="kpi-value" style="font-size: 1.4rem;">{{ total_marketing_spend | inr }}</span>
+            <span class="kpi-subtitle">{{ total_marketing_leads }} leads (₹{{ avg_marketing_cpl | round(1) }} CPL)</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-danger);">
+            <div class="kpi-header">
+                <span class="kpi-label">Helpdesk Tickets</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-danger);"><i class="bi bi-headset"></i></div>
+            </div>
+            <span class="kpi-value" style="color: var(--arch-danger);">{{ open_tickets_count }}</span>
+            <span class="kpi-subtitle">{{ critical_tickets_count }} Critical incidents</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-success);">
+            <div class="kpi-header">
+                <span class="kpi-label">System Health</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-success);"><i class="bi bi-cpu-fill"></i></div>
+            </div>
+            <span class="kpi-value" style="color: var(--arch-success);">100%</span>
+            <span class="kpi-subtitle">{{ operational_services_count }} / {{ services_count }} Services Operational</span>
+        </div>
+    </div>
+
+    <div class="grid-cols-2" style="margin-top: 1.25rem;">
+        <div class="card">
+            <div class="card-title">
+                <span>Active Ad Campaigns & ROI</span>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="{{ url_for('marketing.create_campaign') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Launch Campaign</a>
+                    <a href="{{ url_for('marketing.campaigns_list') }}" class="btn btn-outline btn-sm">All Campaigns</a>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="arch-table">
+                    <thead>
+                        <tr>
+                            <th>Campaign</th>
+                            <th>Platform</th>
+                            <th>Spend</th>
+                            <th>Leads</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in recent_campaigns_list %}
+                        <tr>
+                            <td><strong>{{ c.name }}</strong><br><small style="color: var(--arch-text-muted);">{{ c.campaign_code }}</small></td>
+                            <td><span class="badge badge-info">{{ c.platform }}</span></td>
+                            <td><strong>{{ c.spent_amount | inr }}</strong></td>
+                            <td><span class="badge badge-success">{{ c.leads_generated }}</span></td>
+                            <td><span class="badge badge-success">{{ c.status }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No campaigns active yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span>IT Support & Helpdesk Tickets</span>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="{{ url_for('it.create_ticket') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Log Ticket</a>
+                    <a href="{{ url_for('it.tickets_list') }}" class="btn btn-outline btn-sm">All Tickets</a>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="arch-table">
+                    <thead>
+                        <tr>
+                            <th>Ticket</th>
+                            <th>Priority</th>
+                            <th>By</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in recent_tickets_list %}
+                        <tr>
+                            <td><strong>{{ t.title }}</strong><br><small style="color: var(--arch-text-muted);">{{ t.ticket_number }}</small></td>
+                            <td><span class="badge {% if t.priority == 'Critical' %}badge-danger{% elif t.priority == 'High' %}badge-warning{% else %}badge-primary{% endif %}">{{ t.priority }}</span></td>
+                            <td>{{ t.requested_by.full_name }}</td>
+                            <td><span class="badge badge-warning">{{ t.status }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No open IT tickets.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Telemetry and Hardware Quick Bar -->
+    <div class="grid-cols-2" style="margin-top: 1.25rem;">
+        <div class="card">
+            <h3 class="card-title" style="margin-bottom: 0.75rem;"><i class="bi bi-hdd-network-fill" style="color: var(--arch-blue-primary);"></i> Infrastructure Health Telemetry</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <div style="padding: 0.5rem 0.75rem; border: 1px solid var(--arch-border); border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                    <div><strong>ERP Application Server</strong> &bull; <small style="color: var(--arch-text-muted);">Flask / Python</small></div>
+                    <span class="badge badge-success"><i class="bi bi-check-circle-fill"></i> Operational</span>
+                </div>
+                <div style="padding: 0.5rem 0.75rem; border: 1px solid var(--arch-border); border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                    <div><strong>SQLite ACID Database</strong> &bull; <small style="color: var(--arch-text-muted);">Instance DB</small></div>
+                    <span class="badge badge-success"><i class="bi bi-check-circle-fill"></i> Operational</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                    <a href="{{ url_for('it.assets_list') }}" class="btn btn-outline btn-sm" style="flex: 1; justify-content: center;"><i class="bi bi-laptop"></i> Hardware Assets ({{ allocated_assets_count }})</a>
+                    <a href="{{ url_for('it.infrastructure') }}" class="btn btn-primary btn-sm" style="flex: 1; justify-content: center;"><i class="bi bi-activity"></i> Full Telemetry</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 class="card-title" style="margin-bottom: 0.75rem;"><i class="bi bi-pie-chart-fill" style="color: #8b5cf6;"></i> Growth & Attribution Analytics</h3>
+            <p style="font-size: 0.85rem; color: var(--arch-text-muted); margin-bottom: 1rem;">
+                Track paid ad spend vs organic conversions across 99acres, Magicbricks, Google Search and Meta Ads.
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <a href="{{ url_for('marketing.attribution') }}" class="btn btn-outline btn-sm" style="justify-content: flex-start; padding: 0.6rem 0.8rem;">
+                    <i class="bi bi-pie-chart-fill" style="color: #8b5cf6;"></i>
+                    <span style="margin-left: 0.5rem;">View Lead Source Attribution & CPA</span>
+                </a>
+                <a href="{{ url_for('marketing.campaigns_list') }}" class="btn btn-outline btn-sm" style="justify-content: flex-start; padding: 0.6rem 0.8rem;">
+                    <i class="bi bi-megaphone-fill" style="color: #0ea5e9;"></i>
+                    <span style="margin-left: 0.5rem;">Manage All Real Estate Portal Campaigns</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= SLOT 7: FIELD OPERATIONS & GPS DASHBOARD ================= -->
+<div class="dept-slot-pane" id="dept-slot-field">
+    <div class="grid-cols-4">
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-warning);">
+            <div class="kpi-header">
+                <span class="kpi-label">Upcoming Visits</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-warning);"><i class="bi bi-calendar3"></i></div>
+            </div>
+            <span class="kpi-value" style="color: var(--arch-warning);">{{ upcoming_visits }}</span>
+            <span class="kpi-subtitle">Scheduled inspections</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-blue-primary);">
+            <div class="kpi-header">
+                <span class="kpi-label">Today's Visits</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-blue-primary);"><i class="bi bi-geo-alt-fill"></i></div>
+            </div>
+            <span class="kpi-value">{{ my_today_visits_count }}</span>
+            <span class="kpi-subtitle">On today's agenda</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-info);">
+            <div class="kpi-header">
+                <span class="kpi-label">Sourcing Assignments</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-info);"><i class="bi bi-search"></i></div>
+            </div>
+            <span class="kpi-value">{{ sourcing_assignments_count }}</span>
+            <span class="kpi-subtitle">Active property hunts</span>
+        </div>
+        <div class="kpi-card" style="border-left: 4px solid var(--arch-success);">
+            <div class="kpi-header">
+                <span class="kpi-label">GPS Pings Today</span>
+                <div class="kpi-icon-wrap" style="color: var(--arch-success);"><i class="bi bi-broadcast-pin"></i></div>
+            </div>
+            <span class="kpi-value" style="color: var(--arch-success);">{{ gps_pings_today_count }}</span>
+            <span class="kpi-subtitle">Live location updates</span>
+        </div>
+    </div>
+
+    <div class="grid-cols-2" style="margin-top: 1.25rem;">
+        <div class="card">
+            <div class="card-title">
+                <span>Scheduled Site Inspections</span>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="{{ url_for('field.schedule_visit') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Schedule Visit</a>
+                    <a href="{{ url_for('field.visits_list') }}" class="btn btn-outline btn-sm">All Visits</a>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="arch-table">
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Date & Time</th>
+                            <th>Executive</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for v in upcoming_visits_list %}
+                        <tr>
+                            <td><strong>{{ v.property.title }}</strong><br><small style="color: var(--arch-text-muted);"><i class="bi bi-geo-alt"></i> {{ v.property.locality }}</small></td>
+                            <td>{{ v.visit_date }}<br><small>{{ v.visit_time.strftime('%I:%M %p') }}</small></td>
+                            <td>{{ v.assigned_employee.full_name }}</td>
+                            <td><span class="badge badge-warning">{{ v.status }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No upcoming visits scheduled.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span>Recent Sourcing Assignments</span>
+                <a href="{{ url_for('sourcing.index') }}" class="btn btn-outline btn-sm"><i class="bi bi-search"></i> Sourcing Hub</a>
+            </div>
+            <div class="table-responsive">
+                <table class="arch-table">
+                    <thead>
+                        <tr>
+                            <th>Assignment</th>
+                            <th>Locality</th>
+                            <th>Assigned To</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for src in recent_sourcing_list %}
+                        <tr>
+                            <td><strong>{{ src.title }}</strong><br><small style="color: var(--arch-text-muted);">{{ src.sourcing_code }}</small></td>
+                            <td>{{ src.locality }}</td>
+                            <td>{{ src.assigned_to.full_name }}</td>
+                            <td><span class="badge badge-info">{{ src.status }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No active sourcing assignments.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- GPS Tracking & Live Movement Telemetry -->
+    <div class="card" style="margin-top: 1.25rem;">
+        <div class="card-title">
+            <span><i class="bi bi-geo-alt-fill" style="color: var(--arch-danger);"></i> Real-Time GPS Logs & Field Staff Tracking</span>
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="{{ url_for('gps.index') }}" class="btn btn-primary btn-sm"><i class="bi bi-map"></i> Open Live GPS Tracker</a>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="arch-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Executive</th>
+                        <th>Coordinates</th>
+                        <th>Location Landmark</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for g in recent_gps_logs %}
+                    <tr>
+                        <td>{{ g.timestamp.strftime('%I:%M %p') }}</td>
+                        <td><strong>{{ g.user.full_name }}</strong></td>
+                        <td><code>{{ g.latitude | round(4) }}, {{ g.longitude | round(4) }}</code></td>
+                        <td>{{ g.location_name }}</td>
+                        <td><span class="badge badge-success">{{ g.tracking_type }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="text-align: center; color: var(--arch-text-muted); padding: 1.5rem;">No GPS tracking pings logged today.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if current_user.is_management() or current_user.can_access_crm() %}
+<script>
+    // Tab switching for Admin Master Department Hub
+    function switchDeptTab(tabId) {
+        // Remove active class from all tab buttons
+        document.querySelectorAll('.dept-tab-btn').forEach(btn => btn.classList.remove('active'));
+        // Hide all slot panes
+        document.querySelectorAll('.dept-slot-pane').forEach(pane => pane.classList.remove('active'));
+
+        // Activate button
+        const activeBtn = document.getElementById('tab-btn-' + tabId);
+        if (activeBtn) activeBtn.classList.add('active');
+
+        // Activate pane
+        const activePane = document.getElementById('dept-slot-' + tabId);
+        if (activePane) activePane.classList.add('active');
+    }
+
+    // Lead Funnel Chart
+    const funnelCanvas = document.getElementById('leadFunnelChart');
+    if (funnelCanvas) {
+        new Chart(funnelCanvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: {{ funnel_data.keys() | list | tojson }},
+                datasets: [{
+                    label: 'Leads count',
+                    data: {{ funnel_data.values() | list | tojson }},
+                    backgroundColor: '#1d4ed8',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { 
+                    y: { 
+                        beginAtZero: true, 
+                        ticks: { precision: 0 },
+                        grid: { color: 'rgba(226, 232, 240, 0.6)' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    // Property Category Doughnut Chart
+    const propCanvas = document.getElementById('propCategoryChart');
+    if (propCanvas) {
+        new Chart(propCanvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: {{ prop_cats.keys() | list | tojson }},
+                datasets: [{
+                    data: {{ prop_cats.values() | list | tojson }},
+                    backgroundColor: ['#1d4ed8', '#0284c7', '#10b981', '#f59e0b', '#6366f1']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: { family: 'Inter', size: 12 },
+                            padding: 16
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+{% endif %}
+{% endblock %}

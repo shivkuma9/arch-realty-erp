@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 900px; margin: 0 auto;">
+    <h2 class="card-title">{{ title }}</h2>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            <label class="form-label">{{ form.title.label.text }} *</label>
+            {{ form.title(class="form-control", placeholder="e.g. Grade-A Corporate Office on SG Highway") }}
+        </div>
+
+        <div class="grid-cols-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div class="form-group">
+                <label class="form-label">{{ form.category.label.text }} *</label>
+                {{ form.category(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.transaction_type.label.text }} *</label>
+                {{ form.transaction_type(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.availability_status.label.text }}</label>
+                {{ form.availability_status(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.locality.label.text }} *</label>
+                {{ form.locality(class="form-control", placeholder="e.g. Bodakdev, Prahlad Nagar, Iscon Cross Road") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.city.label.text }}</label>
+                {{ form.city(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">{{ form.address.label.text }} *</label>
+            {{ form.address(class="form-control", rows=2) }}
+        </div>
+
+        <div class="grid-cols-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div class="form-group">
+                <label class="form-label">{{ form.carpet_area.label.text }}</label>
+                {{ form.carpet_area(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.builtup_area.label.text }}</label>
+                {{ form.builtup_area(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.super_builtup_area.label.text }}</label>
+                {{ form.super_builtup_area(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div class="form-group">
+                <label class="form-label">{{ form.sale_price.label.text }}</label>
+                {{ form.sale_price(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.rent_price.label.text }}</label>
+                {{ form.rent_price(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.security_deposit.label.text }}</label>
+                {{ form.security_deposit(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.furnishing.label.text }}</label>
+                {{ form.furnishing(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.floors.label.text }}</label>
+                {{ form.floors(class="form-control", placeholder="e.g. 5th Floor / 14 Floors") }}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">{{ form.amenities.label.text }}</label>
+            {{ form.amenities(class="form-control") }}
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.owner_id.label.text }}</label>
+                {{ form.owner_id(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.assigned_to_id.label.text }}</label>
+                {{ form.assigned_to_id(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="grid-cols-2">
+            <div class="form-group">
+                <label class="form-label">{{ form.latitude.label.text }}</label>
+                {{ form.latitude(class="form-control", placeholder="e.g. 23.0300") }}
+            </div>
+            <div class="form-group">
+                <label class="form-label">{{ form.longitude.label.text }}</label>
+                {{ form.longitude(class="form-control", placeholder="e.g. 72.5074") }}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">{{ form.description.label.text }}</label>
+            {{ form.description(class="form-control", rows=3) }}
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">{{ form.internal_notes.label.text }}</label>
+            {{ form.internal_notes(class="form-control", rows=2) }}
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary">Save Property Listing</button>
+            <a href="{{ url_for('properties.index') }}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

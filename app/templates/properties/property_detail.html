@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}{{ property.property_code }} - {{ property.title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <h1 class="page-title">{{ property.title }}</h1>
+            <span class="badge badge-primary">{{ property.category }}</span>
+            <span class="badge badge-success">{{ property.availability_status }}</span>
+            <span class="badge" style="background: {% if property.approval_status == 'Approved' %}#d1fae5; color: #065f46;{% elif property.approval_status == 'Rejected' %}#fee2e2; color: #991b1b;{% else %}#fef3c7; color: #92400e;{% endif %} padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;">
+                {{ property.approval_status or 'Approved' }}
+            </span>
+        </div>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">{{ property.property_code }} • <i class="bi bi-geo-alt"></i> {{ property.locality }}, {{ property.city }}</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+        {% if property.video_url %}
+        <a href="{{ property.video_url }}" target="_blank" class="btn btn-outline btn-sm" style="color: #dc2626; border-color: #dc2626;">
+            <i class="bi bi-play-circle-fill"></i> Video Tour
+        </a>
+        {% endif %}
+        {% if (current_user.is_admin() or current_user.is_manager()) and property.approval_status != 'Approved' %}
+        <form method="POST" action="{{ url_for('properties.approve_property', property_id=property.id) }}" style="display: inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-primary" style="background: #059669; border-color: #059669;">
+                <i class="bi bi-check-lg"></i> Approve Listing
+            </button>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('properties.edit_property', property_id=property.id) }}" class="btn btn-primary btn-sm">Edit Listing</a>
+        <a href="{{ url_for('field.schedule_visit') }}" class="btn btn-outline btn-sm">Schedule Visit</a>
+    </div>
+</div>
+
+<div class="grid-cols-2">
+    <!-- Specifications -->
+    <div class="card">
+        <h3 class="card-title">Commercial & Space Specifications</h3>
+        <table class="arch-table">
+            <tr>
+                <td style="color: var(--arch-text-muted);">Sub-Category</td>
+                <td><span class="badge badge-info">{{ property.sub_category or property.category }}</span></td>
+            </tr>
+            {% if property.building_name %}
+            <tr>
+                <td style="color: var(--arch-text-muted);">Building / Project</td>
+                <td><strong>{{ property.building_name }}</strong> {% if property.unit_number %}(Unit #{{ property.unit_number }}){% endif %}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td style="width: 35%; color: var(--arch-text-muted);">Transaction Model</td>
+                <td><strong>For {{ property.transaction_type }}</strong></td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">Asking Price / Rent</td>
+                <td><strong style="color: var(--arch-blue-primary); font-size: 1.1rem;">{{ (property.sale_price if property.transaction_type == 'Sale' else property.rent_price) | inr }}</strong></td>
+            </tr>
+            {% if property.rate_per_sqft and property.rate_per_sqft > 0 %}
+            <tr>
+                <td style="color: var(--arch-text-muted);">Rate per Sq.Ft</td>
+                <td>₹ {{ property.rate_per_sqft:,.2f }} / Sq.Ft</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td style="color: var(--arch-text-muted);">Security Deposit</td>
+                <td>{{ property.security_deposit | inr }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">Carpet Area</td>
+                <td><strong>{{ property.carpet_area }} Sq.Ft</strong> (Built-up: {{ property.builtup_area }} Sq.Ft)</td>
+            </tr>
+            {% if property.plot_area_sqyd and property.plot_area_sqyd > 0 %}
+            <tr>
+                <td style="color: var(--arch-text-muted);">Plot Land Area</td>
+                <td><strong style="color: var(--arch-blue-primary);">{{ property.plot_area_sqyd }} Sq.Yards</strong></td>
+            </tr>
+            {% endif %}
+            {% if property.construction_type or property.zone_type %}
+            <tr>
+                <td style="color: var(--arch-text-muted);">Structure / Zoning</td>
+                <td>{{ property.construction_type or 'Standard' }} | Zone: {{ property.zone_type or 'General' }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td style="color: var(--arch-text-muted);">Furnishing Status</td>
+                <td>{{ property.furnishing }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">Floor / Level</td>
+                <td>{{ property.floors or 'N/A' }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">Amenities</td>
+                <td>{{ property.amenities or 'Power Backup, Lift, Reserved Parking' }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--arch-text-muted);">Address</td>
+                <td>{{ property.address }}</td>
+            </tr>
+            {% if property.google_maps_link %}
+            <tr>
+                <td style="color: var(--arch-text-muted);">Map Location</td>
+                <td><a href="{{ property.google_maps_link }}" target="_blank" class="btn btn-outline btn-sm"><i class="bi bi-geo-alt-fill"></i> View on Google Maps <i class="bi bi-box-arrow-up-right"></i></a></td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td style="color: var(--arch-text-muted);">Brokerage Terms</td>
+                <td>{{ property.brokerage_terms }}</td>
+            </tr>
+        </table>
+
+        {% if property.description %}
+        <div style="margin-top: 1rem; padding: 0.75rem; background: var(--arch-bg-main); border-radius: 6px;">
+            <strong style="font-size: 0.8rem; color: var(--arch-text-muted);">Listing Description:</strong>
+            <p style="margin-top: 0.35rem; font-size: 0.85rem;">{{ property.description }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Owner details, internal notes & map -->
+    <div>
+        <!-- Owner details (Restricted access) -->
+        <div class="card">
+            <h3 class="card-title">Ownership & Mandate Info</h3>
+            {% if property.owner %}
+            <table class="arch-table">
+                <tr>
+                    <td style="width: 35%; color: var(--arch-text-muted);">Owner Name</td>
+                    <td><strong>{{ property.owner.name }}</strong></td>
+                </tr>
+                <tr>
+                    <td style="color: var(--arch-text-muted);">Mobile</td>
+                    <td><a href="tel">{{ property.owner.phone }}</a></td>
+                </tr>
+                <tr>
+                    <td style="color: var(--arch-text-muted);">Contact Preference</td>
+                    <td>{{ property.owner.preferred_contact_method }}</td>
+                </tr>
+            </table>
+            {% else %}
+            <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Direct / Unrepresented Owner.</p>
+            {% endif %}
+        </div>
+
+        {% if property.internal_notes and current_user.is_management() %}
+        <div class="card" style="border-left: 4px solid orange;">
+            <h3 class="card-title" style="color: orange;">Confidential Internal Notes</h3>
+            <p style="font-size: 0.85rem;">{{ property.internal_notes }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Property Photos & Media Gallery -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--arch-border); padding-bottom: 8px;">
+                <h3 class="card-title" style="margin: 0;"><i class="bi bi-images text-primary"></i> Property Gallery ({{ property.images|length }})</h3>
+            </div>
+            {% if property.images %}
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px;">
+                {% for img in property.images %}
+                <div style="border: 1px solid var(--arch-border); border-radius: 4px; overflow: hidden; position: relative;">
+                    <img src="{{ url_for('static', filename='uploads/' ~ img.image_path) }}" alt="{{ img.caption }}" style="width: 100%; height: 110px; object-fit: cover; display: block;" onerror="this.src='https://placehold.co/400x250/1e293b/ffffff?text=ARCH+Listing'">
+                    <div style="padding: 4px 6px; font-size: 0.72rem; background: var(--arch-card-bg); text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">
+                        {{ img.caption or 'Photo' }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="font-size: 0.82rem; color: var(--arch-text-muted); margin-bottom: 12px;">No images uploaded yet.</p>
+            {% endif %}
+
+            <!-- Quick Upload Form -->
+            <form method="POST" action="{{ url_for('properties.upload_property_image', property_id=property.id) }}" enctype="multipart/form-data" style="border-top: 1px dashed var(--arch-border); padding-top: 10px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div style="display: flex; gap: 8px;">
+                    <input type="file" name="image" class="form-control" style="font-size: 0.78rem;" accept="image/*" required>
+                    <button type="submit" class="btn btn-sm btn-outline" title="Upload Image"><i class="bi bi-upload"></i></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

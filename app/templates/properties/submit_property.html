@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Employee Property Submission - ARCH Realty{% endblock %}
+
+{% block content %}
+<div style="max-width: 840px; margin: 0 auto;">
+    <div class="page-header" style="margin-bottom: 24px;">
+        <a href="{{ url_for('properties.index') }}" class="btn btn-sm btn-outline" style="margin-bottom: 12px; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="bi bi-arrow-left"></i> Back to Inventory
+        </a>
+        <h1 class="page-title"><i class="bi bi-cloud-arrow-up text-primary"></i> Employee Property Submission</h1>
+        <p class="page-subtitle text-muted">Field executive & sourcing portal: Submit new commercial, industrial, or pre-leased property listings for administrative approval.</p>
+    </div>
+
+    <div class="card" style="background: var(--arch-card-bg); border-radius: 8px; border: 1px solid var(--arch-border); padding: 28px;">
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px;">Property Title / Listing Heading *</label>
+                <input type="text" name="title" class="form-control" placeholder="e.g. 3,500 sq.ft Furnished Corporate Office at Westgate, SG Highway" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Category *</label>
+                    <select name="category" class="form-control" required>
+                        <option value="Commercial">Commercial</option>
+                        <option value="Industrial">Industrial</option>
+                        <option value="Pre-Leased">Pre-Leased (ROI)</option>
+                        <option value="Land & Plot">Land & Plot</option>
+                        <option value="Residential">Residential</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Sub-Category</label>
+                    <input type="text" name="sub_category" class="form-control" placeholder="Office / Showroom / Warehouse">
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Transaction Type *</label>
+                    <select name="transaction_type" class="form-control" required>
+                        <option value="Rent">Rent / Lease</option>
+                        <option value="Buy/Sale">Sale / Purchase</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Building / Project Name</label>
+                    <input type="text" name="building_name" class="form-control" placeholder="e.g. Westgate / Titanium City Center / Mondeal Heights">
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Locality / Micro-Market *</label>
+                    <input type="text" name="locality" class="form-control" placeholder="e.g. SG Highway, Prahlad Nagar, Changodar" required>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px;">Full Property Address</label>
+                <input type="text" name="address" class="form-control" placeholder="Complete address with floor, unit number, landmark">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Carpet Area (Sq.Ft)</label>
+                    <input type="number" step="any" name="carpet_area" class="form-control" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Built-Up Area</label>
+                    <input type="number" step="any" name="builtup_area" class="form-control" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Sale Price (₹)</label>
+                    <input type="number" step="any" name="sale_price" class="form-control" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Rent / Month (₹)</label>
+                    <input type="number" step="any" name="rent_price" class="form-control" placeholder="0">
+                </div>
+            </div>
+
+            <!-- Media Section: Photos & Video URL -->
+            <div style="border-top: 1px solid var(--arch-border); border-bottom: 1px solid var(--arch-border); padding: 20px 0; margin-bottom: 20px;">
+                <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 14px;"><i class="bi bi-camera-video text-primary"></i> Media & Virtual Tours</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label style="display: block; font-weight: 600; margin-bottom: 8px;">Primary Property Image</label>
+                        <input type="file" name="image" class="form-control" accept="image/*">
+                        <small class="text-muted">Upload high-res front view or interior photo.</small>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: block; font-weight: 600; margin-bottom: 8px;">Video Walkthrough URL</label>
+                        <input type="url" name="video_url" class="form-control" placeholder="https://youtube.com/... or Google Drive link">
+                        <small class="text-muted">Link to site walkthrough video recorded on-site.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px;">Google Maps Location URL</label>
+                <input type="url" name="google_maps_link" class="form-control" placeholder="https://maps.google.com/?q=...">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px;">Public Property Description</label>
+                <textarea name="description" class="form-control" rows="3" placeholder="Key highlights, furnishing specifications, parking ratio, power backup, etc."></textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px;">Internal Notes & Owner Terms</label>
+                <textarea name="internal_notes" class="form-control" rows="2" placeholder="Owner's expectation, negotiable margin, key availability date, broker terms"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <a href="{{ url_for('properties.index') }}" class="btn btn-outline">Cancel</a>
+                <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">
+                    <i class="bi bi-send-check"></i> Submit for Approval
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

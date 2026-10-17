@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h2 class="card-title">Notifications & System Alerts</h2>
+    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        {% for n in notifications %}
+        <div style="padding: 1rem; border: 1px solid var(--arch-border); border-radius: 6px; background-color: {% if not n.is_read %}rgba(30, 80, 187, 0.04){% else %}var(--arch-card-bg){% endif %}; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <span class="badge badge-info">{{ n.category }}</span>
+                <strong style="margin-left: 0.5rem;">{{ n.title }}</strong>
+                <p style="margin-top: 0.25rem; font-size: 0.85rem; color: var(--arch-text-muted);">{{ n.message }}</p>
+                <small style="color: var(--arch-text-muted); font-size: 0.75rem;">{{ n.created_at.strftime('%d %b %Y, %I:%M %p') }}</small>
+            </div>
+            <div>
+                {% if n.link %}
+                <a href="{{ n.link }}" class="btn btn-outline btn-sm">View Record</a>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <p style="text-align: center; color: var(--arch-text-muted); padding: 2rem;">No notifications found.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

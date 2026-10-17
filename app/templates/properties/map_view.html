@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Property Map Explorer - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Ahmedabad Property Map Explorer</h1>
+        <p style="color: var(--arch-text-muted); font-size: 0.85rem;">Interactive OpenStreetMap / Leaflet view of active inventory across key commercial hubs</p>
+    </div>
+    <a href="{{ url_for('properties.index') }}" class="btn btn-outline btn-sm">List View</a>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden;">
+    <div id="map" style="height: 550px; width: 100%;"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize Leaflet map centered on Ahmedabad (SG Highway / Bodakdev area)
+    const map = L.map('map').setView([23.0338, 72.5074], 12);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const properties = {{ map_properties | tojson }};
+
+    properties.forEach(p => {
+        const marker = L.marker([p.lat, p.lng]).addTo(map);
+        const popupContent = `
+            <div style="font-size: 13px; min-width: 180px;">
+                <strong style="color: #182b5c;">${p.title}</strong><br>
+                <span style="color: #64748b;">${p.category} • ${p.locality}</span><br>
+                <strong style="color: #1e50bb; font-size: 14px;">${p.price}</strong><br>
+                <a href="${p.url}" style="display: inline-block; margin-top: 6px; color: #1e50bb; font-weight: 600;">View Details &rarr;</a>
+            </div>
+        `;
+        marker.bindPopup(popupContent);
+    });
+</script>
+{% endblock %}

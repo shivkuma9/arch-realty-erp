@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}My Sourcing Assignments - ARCH Realty{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <div>
+        <h1 class="page-title"><i class="bi bi-person-workspace text-primary"></i> My Sourcing Tasks</h1>
+        <p class="page-subtitle text-muted">Assignments designated to you for client property sourcing and micro-market scouting.</p>
+    </div>
+    <div>
+        <a href="{{ url_for('properties.submit_property') }}" class="btn btn-outline">
+            <i class="bi bi-cloud-arrow-up"></i> Direct Property Submission
+        </a>
+    </div>
+</div>
+
+<div class="card" style="background: var(--arch-card-bg); border-radius: 8px; border: 1px solid var(--arch-border); padding: 20px;">
+    <div class="table-responsive">
+        <table class="table" style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--arch-border); text-align: left; color: var(--arch-muted); font-size: 0.8rem; text-transform: uppercase;">
+                    <th style="padding: 12px 16px;">Sourcing Code</th>
+                    <th style="padding: 12px 16px;">Task Title</th>
+                    <th style="padding: 12px 16px;">Type</th>
+                    <th style="padding: 12px 16px;">Target Locality</th>
+                    <th style="padding: 12px 16px;">Area / Budget</th>
+                    <th style="padding: 12px 16px;">Priority</th>
+                    <th style="padding: 12px 16px;">Status</th>
+                    <th style="padding: 12px 16px;">Due Date</th>
+                    <th style="padding: 12px 16px; text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in assignments %}
+                <tr style="border-bottom: 1px solid var(--arch-border); font-size: 0.88rem;">
+                    <td style="padding: 14px 16px; font-weight: 600;">
+                        <a href="{{ url_for('sourcing.detail', assignment_id=a.id) }}" style="color: #4361ee; text-decoration: none;">
+                            {{ a.sourcing_code }}
+                        </a>
+                    </td>
+                    <td style="padding: 14px 16px;">
+                        <div style="font-weight: 600;">{{ a.title }}</div>
+                        {% if a.lead %}
+                        <div style="font-size: 0.75rem; color: var(--arch-muted);"><i class="bi bi-funnel"></i> For: {{ a.lead.full_name }}</div>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 14px 16px;">
+                        <span class="badge" style="background: #e0e7ff; color: #3730a3; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;">
+                            {{ a.sourcing_type }}
+                        </span>
+                    </td>
+                    <td style="padding: 14px 16px;"><i class="bi bi-geo-alt"></i> {{ a.locality }}</td>
+                    <td style="padding: 14px 16px;">
+                        <div>{{ a.min_area_sqft or 0 }} - {{ a.max_area_sqft or 'Any' }} sq.ft</div>
+                        <div style="font-size: 0.75rem; color: var(--arch-muted);">₹ {{ '{:,.2f}'.format(a.target_budget) if a.target_budget else 'Flexible' }}</div>
+                    </td>
+                    <td style="padding: 14px 16px;">
+                        <span class="badge" style="background: {% if a.priority == 'High' %}#fee2e2; color: #991b1b;{% elif a.priority == 'Medium' %}#fef3c7; color: #92400e;{% else %}#ecfdf5; color: #065f46;{% endif %} padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;">
+                            {{ a.priority }}
+                        </span>
+                    </td>
+                    <td style="padding: 14px 16px;">
+                        <span class="badge" style="background: {% if a.status == 'Completed' %}#d1fae5; color: #065f46;{% else %}#dbeafe; color: #1e40af;{% endif %} padding: 4px 8px; border-radius: 4px; font-size: 0.75rem;">
+                            {{ a.status }}
+                        </span>
+                    </td>
+                    <td style="padding: 14px 16px; color: var(--arch-muted);">
+                        {{ a.due_date.strftime('%d %b %Y') if a.due_date else 'Flexible' }}
+                    </td>
+                    <td style="padding: 14px 16px; text-align: right;">
+                        <a href="{{ url_for('sourcing.submit_property_for_assignment', assignment_id=a.id) }}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-plus-lg"></i> Submit Property
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 40px; color: var(--arch-muted);">
+                        <i class="bi bi-check2-circle" style="font-size: 2rem; display: block; margin-bottom: 8px;"></i>
+                        No active sourcing assignments pending for you.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

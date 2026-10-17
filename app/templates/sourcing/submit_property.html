@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Submit Sourced Property - ARCH Realty{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <div class="page-header" style="margin-bottom: 24px;">
+        <a href="{{ url_for('sourcing.detail', assignment_id=assignment.id) }}" class="btn btn-sm btn-outline" style="margin-bottom: 12px; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="bi bi-arrow-left"></i> Back to Assignment
+        </a>
+        <h1 class="page-title"><i class="bi bi-building-add text-primary"></i> Submit Property Option</h1>
+        <p class="page-subtitle text-muted">Submit a field-scouted property against task: <strong>{{ assignment.title }}</strong> ({{ assignment.sourcing_code }}).</p>
+    </div>
+
+    <div class="card" style="background: var(--arch-card-bg); border-radius: 8px; border: 1px solid var(--arch-border); padding: 28px;">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px;">Property Title / Name *</label>
+                <input type="text" name="property_title" class="form-control" placeholder="e.g. Shapath V - 7th Floor Executive Office" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Locality / Micro-Market *</label>
+                    <input type="text" name="locality" class="form-control" value="{{ assignment.locality }}" required>
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Category</label>
+                    <input type="text" name="category" class="form-control" value="{{ assignment.category or 'Commercial' }}">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Carpet Area (Sq.Ft)</label>
+                    <input type="number" step="any" name="carpet_area" class="form-control" placeholder="e.g. 2400">
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Expected Price / Rent (₹)</label>
+                    <input type="number" step="any" name="expected_price_or_rent" class="form-control" placeholder="e.g. 150000">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Owner / Broker Name</label>
+                    <input type="text" name="owner_name" class="form-control" placeholder="e.g. Mr. Rajesh Patel">
+                </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 8px;">Owner / Broker Contact Phone *</label>
+                    <input type="text" name="owner_contact" class="form-control" placeholder="e.g. +91 98250 12345" required>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px;">Field Notes & Highlights</label>
+                <textarea name="notes" class="form-control" rows="3" placeholder="Condition of property, amenities, willingness to negotiate, immediate keys availability, etc."></textarea>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <a href="{{ url_for('sourcing.detail', assignment_id=assignment.id) }}" class="btn btn-outline">Cancel</a>
+                <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">
+                    <i class="bi bi-cloud-arrow-up"></i> Submit Sourced Property
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
