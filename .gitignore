@@ -7,3 +7,6 @@ instance/uploads/
 .pytest_cache/
 .env
 *.mp4
+.neon
+node_modules/
+.env.local

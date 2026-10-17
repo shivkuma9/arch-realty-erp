@@ -1,7 +1,10 @@
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(BASE_DIR, '.env.local'))
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'arch-realty-super-secret-key-2026-ahmedabad-erp')
