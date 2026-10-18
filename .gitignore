@@ -10,3 +10,4 @@ instance/uploads/
 .neon
 node_modules/
 .env.local
+PROJECT_AUDIT_AND_IMPROVEMENTS.md
